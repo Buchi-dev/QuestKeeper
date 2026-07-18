@@ -1,0 +1,13 @@
+titles:
+  npc: '<gold>Quests: %npc%'
+  journal: '<gold>Your Quest Journal'
+  details: '<gold>%quest%'
+items:
+  previous: ARROW
+  next: ARROW
+  close: BARRIER
+  refresh: NETHER_STAR
+  accept: LIME_DYE
+  claim: CHEST
+  cancel: RED_DYE
+  back: OAK_DOOR

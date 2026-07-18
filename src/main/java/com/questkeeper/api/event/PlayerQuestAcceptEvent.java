@@ -1,0 +1,3 @@
+package com.questkeeper.api.event;
+import com.questkeeper.quest.model.Quest; import org.bukkit.entity.Player; import org.bukkit.event.Cancellable; import org.bukkit.event.HandlerList; import org.bukkit.event.player.PlayerEvent;
+public final class PlayerQuestAcceptEvent extends PlayerEvent implements Cancellable { private static final HandlerList HANDLERS=new HandlerList(); private final Quest quest; private boolean cancelled; public PlayerQuestAcceptEvent(Player p,Quest q){super(p);quest=q;} public Quest getQuest(){return quest;} public boolean isCancelled(){return cancelled;} public void setCancelled(boolean v){cancelled=v;} public HandlerList getHandlers(){return HANDLERS;} public static HandlerList getHandlerList(){return HANDLERS;} }

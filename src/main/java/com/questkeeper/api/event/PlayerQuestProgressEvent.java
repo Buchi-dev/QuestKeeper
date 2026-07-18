@@ -1,0 +1,3 @@
+package com.questkeeper.api.event;
+import com.questkeeper.quest.model.Quest; import org.bukkit.entity.Player; import org.bukkit.event.HandlerList; import org.bukkit.event.player.PlayerEvent;
+public final class PlayerQuestProgressEvent extends PlayerEvent { private static final HandlerList HANDLERS=new HandlerList(); private final Quest quest; private final String objectiveId; private final int amount; public PlayerQuestProgressEvent(Player p,Quest q,String id,int a){super(p);quest=q;objectiveId=id;amount=a;} public Quest getQuest(){return quest;} public String getObjectiveId(){return objectiveId;} public int getAmount(){return amount;} public HandlerList getHandlers(){return HANDLERS;} public static HandlerList getHandlerList(){return HANDLERS;} }

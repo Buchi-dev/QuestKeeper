@@ -1,0 +1,23 @@
+name: QuestKeeper
+version: 1.0.0
+main: com.questkeeper.QuestKeeperPlugin
+api-version: '1.21'
+author: QuestKeeper
+description: Lightweight NPC quest management for Paper.
+softdepend: [Vault, PlaceholderAPI, MythicMobs, WorldGuard, LuckPerms]
+commands:
+  quests:
+    description: Open your quest journal.
+    aliases: [quest, q]
+    usage: /quests [active|completed|tracked|cancel|help]
+  questadmin:
+    description: Manage QuestKeeper.
+    permission: questkeeper.admin
+  questkeeper:
+    description: QuestKeeper API administration commands.
+    permission: questkeeper.admin
+permissions:
+  questkeeper.use: {default: true}
+  questkeeper.quests: {default: true}
+  questkeeper.cancel: {default: true}
+  questkeeper.admin: {default: op}

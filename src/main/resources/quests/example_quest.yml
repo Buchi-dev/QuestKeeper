@@ -1,0 +1,29 @@
+id: example_quest
+display-name: '<gold>Zombie Cleanup'
+description:
+  - '<gray>Help keep the settlement safe.'
+icon:
+  material: IRON_SWORD
+npc:
+  start: example_keeper
+  claim: example_keeper
+objectives:
+  zombies:
+    type: KILL_ENTITY
+    entity: ZOMBIE
+    amount: 5
+    display: '<yellow>Defeat zombies: <white>%progress%/%required%'
+requirements:
+  permission: ''
+  minimum-level: 0
+  completed-quests: []
+rewards:
+  experience: 50
+  money: 0
+  commands: []
+  items: {}
+settings:
+  repeat-type: ONE_TIME
+  cooldown-seconds: 0
+  auto-claim: false
+  allow-cancel: true

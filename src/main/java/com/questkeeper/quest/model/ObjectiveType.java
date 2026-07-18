@@ -1,0 +1,3 @@
+package com.questkeeper.quest.model;
+
+public enum ObjectiveType { KILL_ENTITY, KILL_MYTHIC_MOB, COLLECT_ITEM, BREAK_BLOCK, CRAFT_ITEM, PLACE_BLOCK, REACH_LOCATION, INTERACT_NPC, EXECUTE_COMMAND }
