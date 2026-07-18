@@ -6,7 +6,6 @@ import com.questkeeper.quest.QuestManager;
 import com.questkeeper.quest.model.ObjectiveDefinition;
 import com.questkeeper.quest.model.Quest;
 import com.questkeeper.quest.model.QuestStatus;
-import com.questkeeper.quest.service.QuestClaimService;
 import com.questkeeper.quest.service.QuestProgressService;
 import com.questkeeper.quest.service.QuestStateService;
 import com.questkeeper.quest.service.RequirementService;
@@ -18,8 +17,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -40,6 +42,7 @@ public final class GuiManager {
     private final RequirementService requirements;
     private final MessageManager messages;
     private final MiniMessage mini = MiniMessage.miniMessage();
+    private FileConfiguration guiConfig;
 
     public GuiManager(JavaPlugin plugin, QuestManager quests, NpcManager npcs, QuestStateService states,
                       QuestProgressService progress, RequirementService requirements, MessageManager messages) {
@@ -50,6 +53,11 @@ public final class GuiManager {
         this.progress = progress;
         this.requirements = requirements;
         this.messages = messages;
+        reload();
+    }
+
+    public void reload() {
+        guiConfig = YamlConfiguration.loadConfiguration(new File(plugin.getDataFolder(), "guis.yml"));
     }
 
     public void openNpc(Player player, String npcId) {
@@ -64,7 +72,9 @@ public final class GuiManager {
         List<Chain> chains = chainsFor(player, npcId, filter);
         int maxPage = Math.max(0, (chains.size() - 1) / PAGE_SIZE);
         int safePage = Math.min(Math.max(page, 0), maxPage);
-        String source = npcId.isBlank() ? "Quest Journal" : "Dungeon Quests";
+        String source = npcId.isBlank()
+                ? "<reset>" + guiString("titles.journal", "<gold>Your Quest Journal")
+                : "<reset>" + guiString("titles.npc", "<gold>Quests: %npc%").replace("%npc%", npcName(npcId));
         QuestCatalogHolder holder = new QuestCatalogHolder(npcId, safePage, filter);
         Inventory inventory = Bukkit.createInventory(holder, 54,
                 messages.component("<gold>" + source + " <dark_gray>• <yellow>" + filterLabel(filter), Map.of()));
@@ -85,18 +95,18 @@ public final class GuiManager {
             inventory.setItem(slot, chainItem(player, chain));
         }
 
-        inventory.setItem(45, item(Material.ARROW, "<yellow>Previous Page", List.of(
+        inventory.setItem(45, item(guiMaterial("items.previous", Material.ARROW), "<yellow>Previous Page", List.of(
                 safePage == 0 ? "<gray>This is the first page." : "<gray>Go to page " + safePage
         )));
         inventory.setItem(46, filterItem(QuestCatalogFilter.ALL, filter));
         inventory.setItem(47, filterItem(QuestCatalogFilter.ACTIVE, filter));
-        inventory.setItem(48, item(Material.BARRIER, "<red>Close", List.of()));
-        inventory.setItem(49, item(Material.NETHER_STAR, "<aqua>Refresh", List.of(
+        inventory.setItem(48, item(guiMaterial("items.close", Material.BARRIER), "<red>Close", List.of()));
+        inventory.setItem(49, item(guiMaterial("items.refresh", Material.NETHER_STAR), "<aqua>Refresh", List.of(
                 "<gray>Reload the current quest catalog."
         )));
         inventory.setItem(50, filterItem(QuestCatalogFilter.AVAILABLE, filter));
         inventory.setItem(51, filterItem(QuestCatalogFilter.COMPLETED, filter));
-        inventory.setItem(53, item(Material.ARROW, "<yellow>Next Page", List.of(
+        inventory.setItem(53, item(guiMaterial("items.next", Material.ARROW), "<yellow>Next Page", List.of(
                 safePage >= maxPage ? "<gray>This is the last page." : "<gray>Go to page " + (safePage + 2)
         )));
         player.openInventory(inventory);
@@ -123,9 +133,9 @@ public final class GuiManager {
             holder.quests.put(slot, quest.id());
             inventory.setItem(slot, levelItem(player, quest, i + 1));
         }
-        inventory.setItem(18, item(Material.OAK_DOOR, "<yellow>Back to Mob List", List.of()));
-        inventory.setItem(22, item(Material.NETHER_STAR, "<aqua>Refresh", List.of("<gray>Refresh level statuses.")));
-        inventory.setItem(26, item(Material.BARRIER, "<red>Close", List.of()));
+        inventory.setItem(18, item(guiMaterial("items.back", Material.OAK_DOOR), "<yellow>Back to Mob List", List.of()));
+        inventory.setItem(22, item(guiMaterial("items.refresh", Material.NETHER_STAR), "<aqua>Refresh", List.of("<gray>Refresh level statuses.")));
+        inventory.setItem(26, item(guiMaterial("items.close", Material.BARRIER), "<red>Close", List.of()));
         player.openInventory(inventory);
     }
 
@@ -133,7 +143,8 @@ public final class GuiManager {
         Quest quest = quests.get(questId);
         if (quest == null) return;
         DetailQuestHolder holder = new DetailQuestHolder(questId, npcId, chainId);
-        Inventory inventory = Bukkit.createInventory(holder, 27, mini.deserialize(quest.displayName()));
+        Inventory inventory = Bukkit.createInventory(holder, 27,
+                messages.component(guiString("titles.details", "<gold>%quest%"), Map.of("quest", quest.displayName())));
         holder.inventory(inventory);
         inventory.setItem(4, item(Material.matchMaterial(quest.iconMaterial()), quest.displayName(), quest.description()));
 
@@ -155,10 +166,10 @@ public final class GuiManager {
         inventory.setItem(16, item(materialFor(status), "<yellow>Status: <white>" + status, List.of(
                 "<gray>Level " + levelOf(quest.id()) + " of this mob chain"
         )));
-        if (status == QuestStatus.AVAILABLE) inventory.setItem(22, item(Material.LIME_DYE, "<green>Accept Quest", List.of()));
-        if (status == QuestStatus.READY_TO_CLAIM) inventory.setItem(22, item(Material.CHEST, "<green>Claim Reward", List.of()));
-        if (status == QuestStatus.ACTIVE && quest.allowCancel()) inventory.setItem(22, item(Material.RED_DYE, "<red>Cancel Quest", List.of()));
-        inventory.setItem(18, item(Material.OAK_DOOR, "<yellow>Back to Levels", List.of()));
+        if (status == QuestStatus.AVAILABLE) inventory.setItem(22, item(guiMaterial("items.accept", Material.LIME_DYE), "<green>Accept Quest", List.of()));
+        if (status == QuestStatus.READY_TO_CLAIM) inventory.setItem(22, item(guiMaterial("items.claim", Material.CHEST), "<green>Claim Reward", List.of()));
+        if (status == QuestStatus.ACTIVE && quest.allowCancel()) inventory.setItem(22, item(guiMaterial("items.cancel", Material.RED_DYE), "<red>Cancel Quest", List.of()));
+        inventory.setItem(18, item(guiMaterial("items.back", Material.OAK_DOOR), "<yellow>Back to Levels", List.of()));
         player.openInventory(inventory);
     }
 
@@ -301,6 +312,28 @@ public final class GuiManager {
 
     private Component component(String raw, Map<String, String> replacements) {
         return messages.component(raw, replacements);
+    }
+
+    private String guiString(String path, String fallback) {
+        return guiConfig.getString(path, fallback);
+    }
+
+    private Material guiMaterial(String path, Material fallback) {
+        String configured = guiConfig.getString(path);
+        Material material = configured == null ? null : Material.matchMaterial(configured.trim());
+        if (material == null) {
+            if (configured != null && !configured.isBlank()) {
+                plugin.getLogger().warning("Invalid GUI material '" + configured + "' at " + path
+                        + "; using " + fallback.name() + ".");
+            }
+            return fallback;
+        }
+        return material;
+    }
+
+    private String npcName(String npcId) {
+        var npc = npcs.get(npcId);
+        return npc == null ? npcId : npc.displayName();
     }
 
     private record Chain(String id, List<Quest> quests) {

@@ -1,0 +1,12 @@
+.idea/
+.vscode/
+target/
+build/
+.gradle/
+*.iml
+*.log
+run/
+server/
+plugins/
+*.db
+.env

@@ -2,9 +2,9 @@ package com.questkeeper.npc;
 
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
-import org.bukkit.EntityEffect;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Registry;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -85,11 +85,13 @@ public final class NpcManager {
         villager.customName(MiniMessage.miniMessage().deserialize(definition.displayName()));
         villager.setCustomNameVisible(true);
         try {
-            villager.setProfession(Villager.Profession.valueOf(definition.profession().toUpperCase(Locale.ROOT)));
+            Villager.Profession profession = professionValue(definition.profession());
+            if (profession != null) villager.setProfession(profession);
         } catch (Exception ignored) {
         }
         try {
-            villager.setVillagerType(Villager.Type.valueOf(definition.villagerType().toUpperCase(Locale.ROOT)));
+            Villager.Type type = villagerTypeValue(definition.villagerType());
+            if (type != null) villager.setVillagerType(type);
         } catch (Exception ignored) {
         }
         villager.setAI(false);
@@ -170,5 +172,13 @@ public final class NpcManager {
 
     public NamespacedKey markerKey() {
         return marker;
+    }
+
+    private Villager.Profession professionValue(String value) {
+        return Registry.VILLAGER_PROFESSION.get(NamespacedKey.minecraft(value.toLowerCase(Locale.ROOT)));
+    }
+
+    private Villager.Type villagerTypeValue(String value) {
+        return Registry.VILLAGER_TYPE.get(NamespacedKey.minecraft(value.toLowerCase(Locale.ROOT)));
     }
 }

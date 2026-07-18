@@ -20,6 +20,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.time.ZoneId;
+import java.util.Objects;
 
 public final class QuestKeeperPlugin extends JavaPlugin {
     private DatabaseManager database;
@@ -65,18 +66,18 @@ public final class QuestKeeperPlugin extends JavaPlugin {
 
         Bukkit.getPluginManager().registerEvents(new QuestListener(this, npcs, quests, guis, progress, claims, data, states, messages), this);
         var playerCommand = new com.questkeeper.command.QuestCommand(guis, claims, quests, messages);
-        getCommand("quests").setExecutor(playerCommand);
-        getCommand("quests").setTabCompleter(playerCommand);
+        Objects.requireNonNull(getCommand("quests"), "quests command is missing from plugin.yml").setExecutor(playerCommand);
+        Objects.requireNonNull(getCommand("quests"), "quests command is missing from plugin.yml").setTabCompleter(playerCommand);
         var adminCommand = new com.questkeeper.command.QuestAdminCommand(this);
-        getCommand("questadmin").setExecutor(adminCommand);
-        getCommand("questadmin").setTabCompleter(adminCommand);
-        getCommand("questkeeper").setExecutor(adminCommand);
-        getCommand("questkeeper").setTabCompleter(adminCommand);
+        Objects.requireNonNull(getCommand("questadmin"), "questadmin command is missing from plugin.yml").setExecutor(adminCommand);
+        Objects.requireNonNull(getCommand("questadmin"), "questadmin command is missing from plugin.yml").setTabCompleter(adminCommand);
+        Objects.requireNonNull(getCommand("questkeeper"), "questkeeper command is missing from plugin.yml").setExecutor(adminCommand);
+        Objects.requireNonNull(getCommand("questkeeper"), "questkeeper command is missing from plugin.yml").setTabCompleter(adminCommand);
         Bukkit.getServicesManager().register(QuestKeeperAPI.class, api, this, ServicePriority.Normal);
 
-        long autosave = getConfig().getLong("autosave-interval-seconds", 60) * 20L;
-        Bukkit.getScheduler().runTaskTimerAsynchronously(this, data::saveAll, autosave, autosave);
-        long npcCheck = getConfig().getLong("npc-validation-interval-seconds", 30) * 20L;
+        long autosave = Math.max(1L, getConfig().getLong("autosave-interval-seconds", 60)) * 20L;
+        Bukkit.getScheduler().runTaskTimer(this, data::saveAll, autosave, autosave);
+        long npcCheck = Math.max(1L, getConfig().getLong("npc-validation-interval-seconds", 30)) * 20L;
         Bukkit.getScheduler().runTaskTimer(this, npcs::respawnMissing, npcCheck, npcCheck);
         new IntegrationManager(this).load(quests, progress);
         getLogger().info("QuestKeeper enabled.");
@@ -86,16 +87,24 @@ public final class QuestKeeperPlugin extends JavaPlugin {
         if (!new File(getDataFolder(), path).exists()) saveResource(path, false);
     }
 
-    public void reloadQuestKeeper() {
+    public boolean reloadQuestKeeper() {
         savePending();
+        QuestLoader.LoadResult loaded = new QuestLoader(this)
+                .loadResult(new File(getDataFolder(), "quests"));
+        if (!loaded.success()) {
+            getLogger().severe("QuestKeeper reload aborted: " + loaded.failedFiles()
+                    + " of " + loaded.totalFiles() + " quest files failed validation.");
+            return false;
+        }
         messages.load();
+        guis.reload();
         npcs.removeAll();
-        QuestLoader loader = new QuestLoader(this);
-        quests.replace(loader.load(new File(getDataFolder(), "quests")));
+        quests.replace(loaded.quests());
         npcs.load();
         npcs.spawnAll();
         getLogger().info("Loaded " + quests.all().size() + " quests.");
         getLogger().info("Loaded " + npcs.all().size() + " QuestKeeper NPCs.");
+        return true;
     }
 
     private void savePending() {

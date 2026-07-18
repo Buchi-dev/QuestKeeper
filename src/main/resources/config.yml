@@ -4,17 +4,11 @@ autosave-interval-seconds: 60
 active-quest-limit: 3
 gui-click-cooldown-millis: 250
 npc-validation-interval-seconds: 30
-reward-inventory-behavior: PREVENT
 reach-check-interval-ticks: 20
 reach-movement-threshold: 1.0
-debug: false
 integrations:
   vault: true
   placeholderapi: true
   mythicmobs: true
-  worldguard: true
 quest-resets:
   timezone: Asia/Manila
-  daily-reset-time: '00:00'
-  weekly-reset-day: MONDAY
-  weekly-reset-time: '00:00'

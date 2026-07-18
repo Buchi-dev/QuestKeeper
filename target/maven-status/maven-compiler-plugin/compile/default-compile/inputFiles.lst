@@ -10,8 +10,6 @@ D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\command\QuestComma
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\database\DatabaseManager.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\gui\DetailQuestHolder.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\gui\GuiManager.java
-D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\gui\JournalHolder.java
-D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\gui\MainQuestHolder.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\gui\QuestCatalogFilter.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\gui\QuestCatalogHolder.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\gui\QuestChainHolder.java

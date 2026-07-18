@@ -4,7 +4,7 @@ main: com.questkeeper.QuestKeeperPlugin
 api-version: '1.21'
 author: QuestKeeper
 description: Lightweight NPC quest management for Paper.
-softdepend: [Vault, PlaceholderAPI, MythicMobs, WorldGuard, LuckPerms]
+softdepend: [Vault, PlaceholderAPI, MythicMobs]
 commands:
   quests:
     description: Open your quest journal.

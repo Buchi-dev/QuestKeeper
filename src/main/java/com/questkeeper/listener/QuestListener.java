@@ -1,12 +1,11 @@
 package com.questkeeper.listener;
 
 import com.questkeeper.gui.DetailQuestHolder;
-import com.questkeeper.gui.JournalHolder;
-import com.questkeeper.gui.MainQuestHolder;
 import com.questkeeper.gui.QuestCatalogHolder;
 import com.questkeeper.gui.QuestChainHolder;
 import com.questkeeper.gui.QuestCatalogFilter;
 import com.questkeeper.gui.GuiManager;
+import com.questkeeper.api.event.PlayerQuestObjectivesCompleteEvent;
 import com.questkeeper.message.MessageManager;
 import com.questkeeper.npc.NpcManager;
 import com.questkeeper.quest.QuestManager;
@@ -17,9 +16,7 @@ import com.questkeeper.quest.service.PlayerQuestDataService;
 import com.questkeeper.quest.service.QuestClaimService;
 import com.questkeeper.quest.service.QuestProgressService;
 import com.questkeeper.quest.service.QuestStateService;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -41,14 +38,13 @@ import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
+import java.util.UUID;
 
 public final class QuestListener implements Listener {
-    private final JavaPlugin plugin;
+    private static final long PLACED_BLOCK_RETENTION_MILLIS = 60 * 60 * 1000L;
     private final NpcManager npcs;
     private final QuestManager quests;
     private final GuiManager guis;
@@ -56,13 +52,15 @@ public final class QuestListener implements Listener {
     private final QuestClaimService claims;
     private final PlayerQuestDataService data;
     private final QuestStateService states;
+    private final long reachCheckIntervalMillis;
+    private final double reachMovementThreshold;
     private final MessageManager messages;
-    private final Set<String> placedBlocks = Collections.synchronizedSet(new HashSet<>());
+    private final Map<String, Long> placedBlocks = new HashMap<>();
+    private final Map<UUID, Long> lastReachCheck = new HashMap<>();
 
     public QuestListener(JavaPlugin plugin, NpcManager npcs, QuestManager quests, GuiManager guis,
                          QuestProgressService progress, QuestClaimService claims, PlayerQuestDataService data,
                          QuestStateService states, MessageManager messages) {
-        this.plugin = plugin;
         this.npcs = npcs;
         this.quests = quests;
         this.guis = guis;
@@ -71,6 +69,10 @@ public final class QuestListener implements Listener {
         this.data = data;
         this.states = states;
         this.messages = messages;
+        this.reachCheckIntervalMillis = Math.max(0L,
+                plugin.getConfig().getLong("reach-check-interval-ticks", 20L) * 50L);
+        this.reachMovementThreshold = Math.max(0.0,
+                plugin.getConfig().getDouble("reach-movement-threshold", 1.0));
     }
 
     @EventHandler
@@ -80,7 +82,9 @@ public final class QuestListener implements Listener {
 
     @EventHandler
     public void quit(PlayerQuitEvent event) {
-        data.saveAndRemove(event.getPlayer().getUniqueId());
+        UUID playerId = event.getPlayer().getUniqueId();
+        lastReachCheck.remove(playerId);
+        data.saveAndRemove(playerId);
     }
 
     @EventHandler
@@ -99,11 +103,8 @@ public final class QuestListener implements Listener {
             return;
         }
         for (String line : npc.greeting()) player.sendMessage(net.kyori.adventure.text.minimessage.MiniMessage.miniMessage().deserialize(line));
-        for (Quest quest : quests.all()) for (var objective : quest.objectives().values()) {
-            if (objective.type() == ObjectiveType.INTERACT_NPC
-                    && objective.settings().getOrDefault("npc-id", "").toString().equalsIgnoreCase(npc.id())) {
-                progress.add(player, quest.id(), objective.id(), 1);
-            }
+        for (var target : quests.objectives(ObjectiveType.INTERACT_NPC, npc.id())) {
+            progress.add(player, target.quest().id(), target.objective().id(), 1);
         }
         guis.openNpc(player, npc.id());
     }
@@ -124,10 +125,11 @@ public final class QuestListener implements Listener {
         if (!(holder instanceof QuestCatalogHolder)
                 && !(holder instanceof QuestChainHolder)
                 && !(holder instanceof DetailQuestHolder)
-                && !(holder instanceof MainQuestHolder)
-                && !(holder instanceof JournalHolder)) return;
+                ) return;
         event.setCancelled(true);
         if (!(event.getWhoClicked() instanceof Player player) || event.getRawSlot() < 0) return;
+        if (event.getRawSlot() >= event.getInventory().getSize()
+                || event.getCurrentItem() == null || event.getCurrentItem().getType().isAir()) return;
 
         if (holder instanceof QuestCatalogHolder catalog) {
             int slot = event.getRawSlot();
@@ -182,8 +184,18 @@ public final class QuestListener implements Listener {
     public void drag(InventoryDragEvent event) {
         Object holder = event.getInventory().getHolder();
         if (holder instanceof QuestCatalogHolder || holder instanceof QuestChainHolder
-                || holder instanceof DetailQuestHolder || holder instanceof MainQuestHolder || holder instanceof JournalHolder) {
+                || holder instanceof DetailQuestHolder) {
             event.setCancelled(true);
+        }
+    }
+
+    @EventHandler
+    public void autoClaim(PlayerQuestObjectivesCompleteEvent event) {
+        Quest quest = event.getQuest();
+        if (quest.autoClaim()) {
+            claims.claim(event.getPlayer(), quest.id(), quest.claimNpc());
+        } else {
+            messages.send(event.getPlayer(), "quest-completed", Map.of("quest", quest.displayName()));
         }
     }
 
@@ -191,34 +203,30 @@ public final class QuestListener implements Listener {
     public void kill(EntityDeathEvent event) {
         Player player = event.getEntity().getKiller();
         if (player == null) return;
-        for (Quest quest : quests.all()) for (var objective : quest.objectives().values()) {
-            if (objective.type() == ObjectiveType.KILL_ENTITY
-                    && objective.settings().getOrDefault("entity", "").toString().equalsIgnoreCase(event.getEntityType().name())) {
-                progress.add(player, quest.id(), objective.id(), 1);
-            }
+        for (var target : quests.objectives(ObjectiveType.KILL_ENTITY, event.getEntityType().name())) {
+            progress.add(player, target.quest().id(), target.objective().id(), 1);
         }
     }
 
     @EventHandler
     public void blockPlace(BlockPlaceEvent event) {
-        placedBlocks.add(key(event.getBlock().getLocation()));
-        for (Quest quest : quests.all()) for (var objective : quest.objectives().values()) {
-            if (objective.type() == ObjectiveType.PLACE_BLOCK
-                    && objective.settings().getOrDefault("material", "").toString().equalsIgnoreCase(event.getBlock().getType().name())) {
-                progress.add(event.getPlayer(), quest.id(), objective.id(), 1);
-            }
+        if (event.isCancelled()) return;
+        prunePlacedBlocks();
+        placedBlocks.put(key(event.getBlock().getLocation()), System.currentTimeMillis());
+        for (var target : quests.objectives(ObjectiveType.PLACE_BLOCK, event.getBlock().getType().name())) {
+            progress.add(event.getPlayer(), target.quest().id(), target.objective().id(), 1);
         }
     }
 
     @EventHandler
     public void blockBreak(BlockBreakEvent event) {
+        if (event.isCancelled()) return;
+        prunePlacedBlocks();
         String locationKey = key(event.getBlock().getLocation());
-        boolean placed = placedBlocks.remove(locationKey);
-        for (Quest quest : quests.all()) for (var objective : quest.objectives().values()) {
-            if (objective.type() == ObjectiveType.BREAK_BLOCK
-                    && objective.settings().getOrDefault("material", "").toString().equalsIgnoreCase(event.getBlock().getType().name())
-                    && (!placed || Boolean.TRUE.equals(objective.settings().get("count-player-placed-blocks")))) {
-                progress.add(event.getPlayer(), quest.id(), objective.id(), 1);
+        boolean placed = placedBlocks.remove(locationKey) != null;
+        for (var target : quests.objectives(ObjectiveType.BREAK_BLOCK, event.getBlock().getType().name())) {
+            if (!placed || Boolean.TRUE.equals(target.objective().settings().get("count-player-placed-blocks"))) {
+                progress.add(event.getPlayer(), target.quest().id(), target.objective().id(), 1);
             }
         }
     }
@@ -226,52 +234,57 @@ public final class QuestListener implements Listener {
     @EventHandler
     public void craft(CraftItemEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
-        int amount = event.isShiftClick() ? event.getRecipe().getResult().getMaxStackSize() : event.getCurrentItem().getAmount();
-        for (Quest quest : quests.all()) for (var objective : quest.objectives().values()) {
-            if (objective.type() == ObjectiveType.CRAFT_ITEM
-                    && objective.settings().getOrDefault("material", "").toString().equalsIgnoreCase(event.getRecipe().getResult().getType().name())) {
-                progress.add(player, quest.id(), objective.id(), amount);
-            }
+        if (event.isCancelled()) return;
+        int amount = event.getRecipe().getResult().getAmount();
+        for (var target : quests.objectives(ObjectiveType.CRAFT_ITEM, event.getRecipe().getResult().getType().name())) {
+            progress.add(player, target.quest().id(), target.objective().id(), amount);
         }
     }
 
     @EventHandler
     public void pickup(EntityPickupItemEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
+        if (event.isCancelled()) return;
         ItemStack stack = event.getItem().getItemStack();
-        for (Quest quest : quests.all()) for (var objective : quest.objectives().values()) {
-            if (objective.type() == ObjectiveType.COLLECT_ITEM
-                    && objective.settings().getOrDefault("material", "").toString().equalsIgnoreCase(stack.getType().name())) {
-                progress.add(player, quest.id(), objective.id(), stack.getAmount());
-            }
+        for (var target : quests.objectives(ObjectiveType.COLLECT_ITEM, stack.getType().name())) {
+            progress.add(player, target.quest().id(), target.objective().id(), stack.getAmount());
         }
     }
 
     @EventHandler
     public void command(PlayerCommandPreprocessEvent event) {
+        if (event.isCancelled()) return;
         String command = event.getMessage().substring(1).split(" ", 2)[0].toLowerCase(Locale.ROOT);
-        for (Quest quest : quests.all()) for (var objective : quest.objectives().values()) {
-            if (objective.type() == ObjectiveType.EXECUTE_COMMAND
-                    && objective.settings().getOrDefault("command", "").toString().replace("/", "").equalsIgnoreCase(command)) {
-                progress.add(event.getPlayer(), quest.id(), objective.id(), 1);
-            }
+        for (var target : quests.objectives(ObjectiveType.EXECUTE_COMMAND, command)) {
+            progress.add(event.getPlayer(), target.quest().id(), target.objective().id(), 1);
         }
     }
 
     @EventHandler
     public void reach(PlayerMoveEvent event) {
-        if (event.getTo() == null || event.getFrom().distanceSquared(event.getTo()) < 1.0) return;
+        if (event.getTo() == null) return;
         Player player = event.getPlayer();
-        for (Quest quest : quests.all()) for (var objective : quest.objectives().values()) {
-            if (objective.type() != ObjectiveType.REACH_LOCATION) continue;
+        if (event.getFrom().getWorld() == event.getTo().getWorld()
+                && event.getFrom().distanceSquared(event.getTo()) < reachMovementThreshold * reachMovementThreshold) return;
+        long now = System.currentTimeMillis();
+        long last = lastReachCheck.getOrDefault(player.getUniqueId(), 0L);
+        if (now - last < reachCheckIntervalMillis) return;
+        lastReachCheck.put(player.getUniqueId(), now);
+
+        Location location = player.getLocation();
+        for (var target : quests.objectives(ObjectiveType.REACH_LOCATION)) {
+            var objective = target.objective();
             String world = objective.settings().getOrDefault("world", "").toString();
             if (!world.isBlank() && !player.getWorld().getName().equalsIgnoreCase(world)) continue;
             double x = number(objective.settings().get("x"));
             double y = number(objective.settings().get("y"));
             double z = number(objective.settings().get("z"));
             double radius = number(objective.settings().getOrDefault("radius", 2));
-            if (player.getLocation().distanceSquared(new Location(player.getWorld(), x, y, z)) <= radius * radius) {
-                progress.add(player, quest.id(), objective.id(), objective.amount());
+            double dx = location.getX() - x;
+            double dy = location.getY() - y;
+            double dz = location.getZ() - z;
+            if (dx * dx + dy * dy + dz * dz <= radius * radius) {
+                progress.add(player, target.quest().id(), objective.id(), objective.amount());
             }
         }
     }
@@ -282,5 +295,10 @@ public final class QuestListener implements Listener {
 
     private String key(Location location) {
         return location.getWorld().getName() + ":" + location.getBlockX() + ":" + location.getBlockY() + ":" + location.getBlockZ();
+    }
+
+    private void prunePlacedBlocks() {
+        long cutoff = System.currentTimeMillis() - PLACED_BLOCK_RETENTION_MILLIS;
+        placedBlocks.entrySet().removeIf(entry -> entry.getValue() < cutoff);
     }
 }

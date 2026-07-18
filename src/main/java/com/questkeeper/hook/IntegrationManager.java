@@ -14,7 +14,9 @@ public final class IntegrationManager {
     }
 
     public void load(QuestManager quests, QuestProgressService progress) {
-        if (Bukkit.getPluginManager().getPlugin("Vault") != null) {
+        if (!plugin.getConfig().getBoolean("integrations.vault", true)) {
+            plugin.getLogger().info("Vault integration is disabled in config.");
+        } else if (Bukkit.getPluginManager().getPlugin("Vault") != null) {
             plugin.getLogger().info("Vault detected; money rewards may be enabled by a provider.");
         } else {
             plugin.getLogger().info("Vault was not found. Money rewards are disabled.");
@@ -22,7 +24,9 @@ public final class IntegrationManager {
 
         loadMythicMobs(quests, progress);
 
-        if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+        if (!plugin.getConfig().getBoolean("integrations.placeholderapi", true)) {
+            plugin.getLogger().info("PlaceholderAPI integration is disabled in config.");
+        } else if (Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
             plugin.getLogger().info("PlaceholderAPI detected.");
             if (plugin instanceof com.questkeeper.QuestKeeperPlugin questKeeper) {
                 new QuestPlaceholderExpansion(questKeeper).register();

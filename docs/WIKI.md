@@ -32,7 +32,7 @@ This wiki documents the current QuestKeeper MVP accurately, including supported 
 | Database | SQLite, bundled by the plugin build |
 | Text | Adventure API and MiniMessage |
 | Required external plugin | None |
-| Optional plugins | Vault, MythicMobs, PlaceholderAPI, WorldGuard, LuckPerms |
+| Optional plugins | Vault, MythicMobs, PlaceholderAPI |
 
 QuestKeeper does not use NMS, CraftBukkit internals, fake-player NPCs, or version-specific reflection.
 
@@ -366,9 +366,6 @@ Supported repeat types are ONE_TIME, REPEATABLE, DAILY, and WEEKLY.
 ~~~yaml
 quest-resets:
   timezone: 'Asia/Manila'
-  daily-reset-time: '00:00'
-  weekly-reset-day: MONDAY
-  weekly-reset-time: '00:00'
 ~~~
 
 A repeatable quest example:
@@ -516,20 +513,14 @@ autosave-interval-seconds: 60
 active-quest-limit: 3
 gui-click-cooldown-millis: 250
 npc-validation-interval-seconds: 30
-reward-inventory-behavior: PREVENT
 reach-check-interval-ticks: 20
 reach-movement-threshold: 1.0
-debug: false
 integrations:
   vault: true
   placeholderapi: true
   mythicmobs: true
-  worldguard: true
 quest-resets:
   timezone: Asia/Manila
-  daily-reset-time: '00:00'
-  weekly-reset-day: MONDAY
-  weekly-reset-time: '00:00'
 ~~~
 
 Messages use MiniMessage and are stored in messages.yml:
@@ -547,8 +538,6 @@ guis.yml provides the supported title and item material configuration surface. T
 - Vault: detected at startup; money requires Vault plus an economy provider.
 - MythicMobs: required for MythicMob objectives.
 - PlaceholderAPI: registers the questkeeper expansion when installed.
-- WorldGuard: declared as a soft dependency for future region-aware filters; ordinary objectives do not require it.
-- LuckPerms: not required; use console command rewards for permission changes.
 
 QuestKeeper starts normally when none of these plugins are installed.
 

@@ -1,13 +1,263 @@
 package com.questkeeper.command;
 
-import com.questkeeper.QuestKeeperPlugin; import com.questkeeper.npc.NpcDefinition; import com.questkeeper.utility.IdValidator; import org.bukkit.*; import org.bukkit.command.*; import org.bukkit.configuration.file.YamlConfiguration; import org.bukkit.entity.Player; import java.io.File; import java.io.IOException; import java.util.*;
-public final class QuestAdminCommand implements CommandExecutor,TabCompleter {private final QuestKeeperPlugin plugin;public QuestAdminCommand(QuestKeeperPlugin p){plugin=p;}public boolean onCommand(CommandSender s,Command c,String l,String[] a){if(!s.hasPermission("questkeeper.admin")){s.sendMessage("No permission.");return true;}if(a.length==0){s.sendMessage("/questadmin reload|quest|npc|progress|complete|reset|resetall|debug");return true;}try{switch(a[0].toLowerCase(Locale.ROOT)){case "reload"-> {plugin.reloadQuestKeeper();s.sendMessage("QuestKeeper reloaded.");}case "quest"->quest(s,a);case "npc"->npc(s,a);case "progress"->progress(s,a);case "complete"->complete(s,a);case "reset"->reset(s,a);case "resetall"->resetAll(s,a);case "debug"->debug(s,a);default->s.sendMessage("Unknown subcommand.");}}catch(Exception e){s.sendMessage("Command failed: "+e.getMessage());plugin.getLogger().warning("Admin command failed: "+e.getMessage());}return true;}
-private void quest(CommandSender s,String[] a){if(a.length<2){s.sendMessage("quest list|create|validate");return;}switch(a[1]){case "list"->plugin.quests().all().forEach(q->s.sendMessage(q.id()+" - "+q.displayName()));case "create"->{requireId(a[2]);File f=new File(plugin.getDataFolder(),"quests/"+a[2]+".yml");if(f.exists()){s.sendMessage("Already exists.");return;}YamlConfiguration c=new YamlConfiguration();c.set("id",a[2]);c.set("display-name","<gold>New Quest");c.set("description",List.of("<gray>Configure me."));c.set("objectives.kill.type","KILL_ENTITY");c.set("objectives.kill.entity","ZOMBIE");c.set("objectives.kill.amount",1);c.set("objectives.kill.display","<yellow>Kill zombies: <white>%progress%/%required%");c.set("requirements.minimum-level",0);c.set("settings.repeat-type","ONE_TIME");c.set("settings.allow-cancel",true);try{c.save(f);s.sendMessage("Created "+a[2]+"; edit YAML then reload.");}catch(IOException e){throw new IllegalStateException(e);}}case "validate"->{if(plugin.quests().get(a[2])!=null)s.sendMessage("Quest is loaded and valid.");else s.sendMessage("Quest is missing or invalid.");}default->s.sendMessage("Unsupported quest operation.");}}
-private void npc(CommandSender s,String[] a)throws IOException{if(a.length<2){s.sendMessage("npc list|create|remove|delete|move|assign|unassign");return;}switch(a[1]){case "list"->plugin.npcs().all().forEach(n->s.sendMessage(n.id()+" - "+n.displayName()));case "create"->{if(a.length<3){s.sendMessage("Usage: /questadmin npc create <id>");return;}if(!(s instanceof Player p)){s.sendMessage("Players only.");return;}requireId(a[2]);var file=new File(plugin.getDataFolder(),"npcs.yml");var c=YamlConfiguration.loadConfiguration(file);String b="npcs."+a[2];c.set(b+".display-name","<gold>"+a[2]);c.set(b+".profession","NONE");c.set(b+".villager-type","PLAINS");c.set(b+".silent",true);Location l=p.getLocation();c.set(b+".location.world",l.getWorld().getName());c.set(b+".location.x",l.getX());c.set(b+".location.y",l.getY());c.set(b+".location.z",l.getZ());c.set(b+".location.yaw",l.getYaw());c.set(b+".location.pitch",l.getPitch());c.set(b+".greeting",List.of("<yellow>Select a quest if you are prepared."));c.set(b+".quests",List.of());c.save(file);plugin.reloadQuestKeeper();s.sendMessage("Created NPC "+a[2]);}case "remove","delete"->{if(a.length<3){s.sendMessage("Usage: /questadmin npc remove <id>");return;}requireId(a[2]);var file=new File(plugin.getDataFolder(),"npcs.yml");var c=YamlConfiguration.loadConfiguration(file);c.set("npcs."+a[2],null);c.save(file);plugin.reloadQuestKeeper();s.sendMessage("Removed NPC "+a[2]);}case "assign","unassign"->{if(a.length<4){s.sendMessage("Usage: /questadmin npc "+a[1]+" <npc> <quest>");return;}var file=new File(plugin.getDataFolder(),"npcs.yml");var c=YamlConfiguration.loadConfiguration(file);String b="npcs."+a[2]+".quests";List<String> values=new ArrayList<>(c.getStringList(b));if(a[1].equals("assign")&&!values.contains(a[3]))values.add(a[3]);if(a[1].equals("unassign"))values.remove(a[3]);c.set(b,values);c.save(file);plugin.reloadQuestKeeper();s.sendMessage("Updated NPC quests.");}default->s.sendMessage("Unsupported NPC operation.");}}
-private void progress(CommandSender s,String[] a){if(a.length<5){s.sendMessage("/questadmin progress <player> <quest> <objective> <amount>");return;}Player p=Bukkit.getPlayerExact(a[1]);if(p==null){s.sendMessage("Player must be online.");return;}plugin.api().addProgress(p,a[2],a[3],Integer.parseInt(a[4]));s.sendMessage("Progress added.");}
-private void complete(CommandSender s,String[] a){Player p=Bukkit.getPlayerExact(a[1]);if(p==null){s.sendMessage("Player must be online.");return;}s.sendMessage(plugin.api().completeQuest(p,a[2])?"Quest completed objectives.":"Unable to complete quest.");}
-private void reset(CommandSender s,String[] a){plugin.api().resetQuest(Bukkit.getOfflinePlayer(a[1]).getUniqueId(),a[2]);s.sendMessage("Quest reset.");}
-private void resetAll(CommandSender s,String[] a){s.sendMessage("Use reset for each quest; bulk reset is intentionally conservative.");}
-private void debug(CommandSender s,String[] a){Player p=Bukkit.getPlayerExact(a[1]);if(p==null){s.sendMessage("Player must be online.");return;}plugin.quests().all().forEach(q->s.sendMessage(q.id()+": "+plugin.api().getPlayerQuestState(p.getUniqueId(),q.id())));}
-private void requireId(String id){if(!IdValidator.isValid(id))throw new IllegalArgumentException("invalid id");}
-public List<String> onTabComplete(CommandSender s,Command c,String l,String[] a){if(a.length==1)return List.of("reload","quest","npc","progress","complete","reset","resetall","debug");if(a.length==2&&a[0].equalsIgnoreCase("quest"))return List.of("list","create","validate","edit","delete");if(a.length==2&&a[0].equalsIgnoreCase("npc"))return List.of("list","create","edit","move","remove","delete","assign","unassign");return List.of();}}
+import com.questkeeper.QuestKeeperPlugin;
+import com.questkeeper.utility.IdValidator;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabCompleter;
+import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
+public final class QuestAdminCommand implements CommandExecutor, TabCompleter {
+    private final QuestKeeperPlugin plugin;
+
+    public QuestAdminCommand(QuestKeeperPlugin plugin) {
+        this.plugin = plugin;
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!sender.hasPermission("questkeeper.admin")) {
+            sender.sendMessage("No permission.");
+            return true;
+        }
+        if (args.length == 0) {
+            sender.sendMessage("/questadmin reload|quest|npc|progress|complete|reset|resetall|debug");
+            return true;
+        }
+
+        try {
+            switch (args[0].toLowerCase(Locale.ROOT)) {
+                case "reload" -> reload(sender);
+                case "quest" -> quest(sender, args);
+                case "npc" -> npc(sender, args);
+                case "progress" -> progress(sender, args);
+                case "complete" -> complete(sender, args);
+                case "reset" -> reset(sender, args);
+                case "resetall" -> resetAll(sender);
+                case "debug" -> debug(sender, args);
+                default -> sender.sendMessage("Unknown subcommand.");
+            }
+        } catch (IllegalArgumentException | IOException exception) {
+            sender.sendMessage("Command failed: " + exception.getMessage());
+            plugin.getLogger().warning("Admin command failed: " + exception.getMessage());
+        }
+        return true;
+    }
+
+    private void reload(CommandSender sender) {
+        sender.sendMessage(plugin.reloadQuestKeeper()
+                ? "QuestKeeper reloaded."
+                : "QuestKeeper reload failed; the previous quest registry was preserved.");
+    }
+
+    private void quest(CommandSender sender, String[] args) throws IOException {
+        if (args.length < 2) {
+            sender.sendMessage("quest list|create|validate");
+            return;
+        }
+        switch (args[1].toLowerCase(Locale.ROOT)) {
+            case "list" -> plugin.quests().all()
+                    .forEach(quest -> sender.sendMessage(quest.id() + " - " + quest.displayName()));
+            case "create" -> createQuest(sender, args);
+            case "validate" -> validateQuest(sender, args);
+            default -> sender.sendMessage("Unsupported quest operation.");
+        }
+    }
+
+    private void createQuest(CommandSender sender, String[] args) throws IOException {
+        requireArgument(args, 2, "Usage: /questadmin quest create <id>");
+        requireId(args[2]);
+        File file = new File(plugin.getDataFolder(), "quests/" + args[2] + ".yml");
+        if (file.exists()) {
+            sender.sendMessage("Already exists.");
+            return;
+        }
+
+        YamlConfiguration configuration = new YamlConfiguration();
+        configuration.set("id", args[2]);
+        configuration.set("display-name", "<gold>New Quest");
+        configuration.set("description", List.of("<gray>Configure me."));
+        configuration.set("objectives.kill.type", "KILL_ENTITY");
+        configuration.set("objectives.kill.entity", "ZOMBIE");
+        configuration.set("objectives.kill.amount", 1);
+        configuration.set("objectives.kill.display", "<yellow>Kill zombies: <white>%progress%/%required%");
+        configuration.set("requirements.minimum-level", 0);
+        configuration.set("settings.repeat-type", "ONE_TIME");
+        configuration.set("settings.allow-cancel", true);
+        configuration.save(file);
+        sender.sendMessage("Created " + args[2] + "; edit YAML then reload.");
+    }
+
+    private void validateQuest(CommandSender sender, String[] args) {
+        requireArgument(args, 2, "Usage: /questadmin quest validate <id>");
+        sender.sendMessage(plugin.quests().get(args[2]) != null
+                ? "Quest is loaded and valid."
+                : "Quest is missing or invalid.");
+    }
+
+    private void npc(CommandSender sender, String[] args) throws IOException {
+        if (args.length < 2) {
+            sender.sendMessage("npc list|create|remove|delete|assign|unassign");
+            return;
+        }
+        switch (args[1].toLowerCase(Locale.ROOT)) {
+            case "list" -> plugin.npcs().all()
+                    .forEach(npc -> sender.sendMessage(npc.id() + " - " + npc.displayName()));
+            case "create" -> createNpc(sender, args);
+            case "remove", "delete" -> removeNpc(sender, args);
+            case "assign", "unassign" -> updateNpcQuests(sender, args);
+            default -> sender.sendMessage("Unsupported NPC operation.");
+        }
+    }
+
+    private void createNpc(CommandSender sender, String[] args) throws IOException {
+        requireArgument(args, 2, "Usage: /questadmin npc create <id>");
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("Players only.");
+            return;
+        }
+        requireId(args[2]);
+        File file = new File(plugin.getDataFolder(), "npcs.yml");
+        YamlConfiguration configuration = YamlConfiguration.loadConfiguration(file);
+        String base = "npcs." + args[2];
+        if (configuration.contains(base)) {
+            sender.sendMessage("Already exists.");
+            return;
+        }
+        configuration.set(base + ".display-name", "<gold>" + args[2]);
+        configuration.set(base + ".profession", "NONE");
+        configuration.set(base + ".villager-type", "PLAINS");
+        configuration.set(base + ".silent", true);
+        Location location = player.getLocation();
+        configuration.set(base + ".location.world", location.getWorld().getName());
+        configuration.set(base + ".location.x", location.getX());
+        configuration.set(base + ".location.y", location.getY());
+        configuration.set(base + ".location.z", location.getZ());
+        configuration.set(base + ".location.yaw", location.getYaw());
+        configuration.set(base + ".location.pitch", location.getPitch());
+        configuration.set(base + ".greeting", List.of("<yellow>Select a quest if you are prepared."));
+        configuration.set(base + ".quests", List.of());
+        configuration.save(file);
+        plugin.reloadQuestKeeper();
+        sender.sendMessage("Created NPC " + args[2]);
+    }
+
+    private void removeNpc(CommandSender sender, String[] args) throws IOException {
+        requireArgument(args, 2, "Usage: /questadmin npc remove <id>");
+        requireId(args[2]);
+        File file = new File(plugin.getDataFolder(), "npcs.yml");
+        YamlConfiguration configuration = YamlConfiguration.loadConfiguration(file);
+        configuration.set("npcs." + args[2], null);
+        configuration.save(file);
+        plugin.reloadQuestKeeper();
+        sender.sendMessage("Removed NPC " + args[2]);
+    }
+
+    private void updateNpcQuests(CommandSender sender, String[] args) throws IOException {
+        requireArgument(args, 3, "Usage: /questadmin npc assign|unassign <npc> <quest>");
+        requireId(args[2]);
+        File file = new File(plugin.getDataFolder(), "npcs.yml");
+        YamlConfiguration configuration = YamlConfiguration.loadConfiguration(file);
+        String path = "npcs." + args[2] + ".quests";
+        if (!configuration.contains("npcs." + args[2])) {
+            throw new IllegalArgumentException("NPC does not exist: " + args[2]);
+        }
+        if (args[1].equalsIgnoreCase("assign") && !plugin.quests().contains(args[3])) {
+            throw new IllegalArgumentException("Quest does not exist: " + args[3]);
+        }
+        List<String> quests = new ArrayList<>(configuration.getStringList(path));
+        if (args[1].equalsIgnoreCase("assign") && !quests.contains(args[3])) quests.add(args[3]);
+        if (args[1].equalsIgnoreCase("unassign")) quests.remove(args[3]);
+        configuration.set(path, quests);
+        configuration.save(file);
+        plugin.reloadQuestKeeper();
+        sender.sendMessage("Updated NPC quests.");
+    }
+
+    private void progress(CommandSender sender, String[] args) {
+        requireArgument(args, 4, "/questadmin progress <player> <quest> <objective> <amount>");
+        Player player = Bukkit.getPlayerExact(args[1]);
+        if (player == null) {
+            sender.sendMessage("Player must be online.");
+            return;
+        }
+        int amount;
+        try {
+            amount = Integer.parseInt(args[4]);
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("amount must be an integer");
+        }
+        if (amount <= 0) throw new IllegalArgumentException("amount must be greater than zero");
+        plugin.api().addProgress(player, args[2], args[3], amount);
+        sender.sendMessage("Progress added.");
+    }
+
+    private void complete(CommandSender sender, String[] args) {
+        requireArgument(args, 2, "/questadmin complete <player> <quest>");
+        Player player = Bukkit.getPlayerExact(args[1]);
+        if (player == null) {
+            sender.sendMessage("Player must be online.");
+            return;
+        }
+        sender.sendMessage(plugin.api().completeQuest(player, args[2])
+                ? "Quest objectives completed." : "Unable to complete quest.");
+    }
+
+    private void reset(CommandSender sender, String[] args) {
+        requireArgument(args, 2, "/questadmin reset <player> <quest>");
+        Player player = Bukkit.getPlayerExact(args[1]);
+        if (player == null) {
+            sender.sendMessage("Player must be online.");
+            return;
+        }
+        plugin.api().resetQuest(player.getUniqueId(), args[2]);
+        sender.sendMessage("Quest reset.");
+    }
+
+    private void resetAll(CommandSender sender) {
+        sender.sendMessage("Use reset for each quest; bulk reset is intentionally conservative.");
+    }
+
+    private void debug(CommandSender sender, String[] args) {
+        requireArgument(args, 1, "/questadmin debug <player>");
+        Player player = Bukkit.getPlayerExact(args[1]);
+        if (player == null) {
+            sender.sendMessage("Player must be online.");
+            return;
+        }
+        plugin.quests().all().forEach(quest -> sender.sendMessage(quest.id() + ": "
+                + plugin.api().getPlayerQuestState(player.getUniqueId(), quest.id())));
+    }
+
+    private void requireId(String id) {
+        if (!IdValidator.isValid(id)) throw new IllegalArgumentException("invalid id");
+    }
+
+    private void requireArgument(String[] args, int index, String usage) {
+        if (args.length <= index) throw new IllegalArgumentException(usage);
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length == 1) {
+            return List.of("reload", "quest", "npc", "progress", "complete", "reset", "resetall", "debug");
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("quest")) {
+            return List.of("list", "create", "validate");
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("npc")) {
+            return List.of("list", "create", "remove", "delete", "assign", "unassign");
+        }
+        return List.of();
+    }
+}
