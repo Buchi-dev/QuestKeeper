@@ -222,7 +222,7 @@ objectives:
     display: '<yellow>Defeat guardians: <white>%progress%/%required%'
 ~~~
 
-MythicMobs is optional. Without it, QuestKeeper starts normally and logs that MythicMob objectives are unavailable.
+MythicMobs is optional. When installed and enabled in `config.yml`, QuestKeeper listens for MythicMobs death events and advances matching objectives by the mob's internal ID. Without it, QuestKeeper starts normally and logs that MythicMob objectives are unavailable.
 
 ### COLLECT_ITEM
 
@@ -496,7 +496,7 @@ Administrator commands:
 | /questadmin quest validate <id> | Confirm a loaded quest. |
 | /questadmin npc list | List configured NPCs. |
 | /questadmin npc create <id> | Create an NPC at the current location. |
-| /questadmin npc remove <id> | Remove an NPC definition and entity. |
+| /questadmin npc remove <id> or /questadmin npc delete <id> | Remove an NPC definition and entity. |
 | /questadmin npc assign <npc> <quest> | Assign a quest to an NPC. |
 | /questadmin npc unassign <npc> <quest> | Remove a quest assignment. |
 | /questadmin progress <player> <quest> <objective> <amount> | Add progress for an online player. |

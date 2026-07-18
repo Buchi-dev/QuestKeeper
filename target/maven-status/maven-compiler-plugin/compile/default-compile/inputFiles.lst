@@ -12,7 +12,11 @@ D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\gui\DetailQuestHol
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\gui\GuiManager.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\gui\JournalHolder.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\gui\MainQuestHolder.java
+D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\gui\QuestCatalogFilter.java
+D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\gui\QuestCatalogHolder.java
+D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\gui\QuestChainHolder.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\hook\IntegrationManager.java
+D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\hook\MythicMobsListener.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\hook\QuestPlaceholderExpansion.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\listener\QuestListener.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\message\MessageManager.java

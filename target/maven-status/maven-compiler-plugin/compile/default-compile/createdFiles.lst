@@ -1,6 +1,7 @@
 com\questkeeper\quest\QuestLoader.class
 com\questkeeper\quest\model\RewardType.class
 com\questkeeper\quest\service\QuestClaimService$1.class
+com\questkeeper\gui\QuestCatalogFilter.class
 com\questkeeper\QuestKeeperPlugin.class
 com\questkeeper\quest\model\RepeatType.class
 com\questkeeper\quest\service\QuestProgressService$QuestManagerView.class
@@ -9,6 +10,7 @@ com\questkeeper\quest\service\QuestClaimService.class
 com\questkeeper\listener\QuestListener.class
 com\questkeeper\gui\DetailQuestHolder.class
 com\questkeeper\quest\model\QuestStatus.class
+com\questkeeper\hook\MythicMobsListener.class
 com\questkeeper\api\QuestKeeperAPI.class
 com\questkeeper\npc\NpcManager.class
 com\questkeeper\api\event\PlayerQuestProgressEvent.class
@@ -30,11 +32,14 @@ com\questkeeper\npc\NpcDefinition.class
 com\questkeeper\quest\service\QuestStateService.class
 com\questkeeper\gui\GuiManager$1.class
 com\questkeeper\gui\MainQuestHolder.class
+com\questkeeper\gui\QuestCatalogHolder.class
 com\questkeeper\quest\model\PlayerQuestData.class
 com\questkeeper\quest\model\Quest.class
 com\questkeeper\command\QuestAdminCommand.class
 com\questkeeper\gui\GuiManager.class
 com\questkeeper\quest\model\RequirementDefinition.class
+com\questkeeper\gui\QuestChainHolder.class
+com\questkeeper\gui\GuiManager$Chain.class
 com\questkeeper\api\event\PlayerQuestAcceptEvent.class
 com\questkeeper\hook\IntegrationManager.class
 com\questkeeper\api\event\PlayerQuestCancelEvent.class

@@ -1,1 +1,18 @@
-npcs: {}
+npcs:
+  example_keeper:
+    display-name: '<gold><bold>Example Keeper'
+    profession: NONE
+    villager-type: PLAINS
+    silent: true
+    location:
+      world: world
+      x: 0.5
+      y: 64.0
+      z: 0.5
+      yaw: 0.0
+      pitch: 0.0
+    greeting:
+    - '<gold><bold>Quest Board'
+    - '<gray>Select a quest if you are prepared.'
+    quests:
+    - example_quest
