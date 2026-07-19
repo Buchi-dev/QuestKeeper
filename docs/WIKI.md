@@ -525,45 +525,54 @@ notifications:
       enabled: true
       toast:
         enabled: true
-        title: '<green>Quest Accepted'
-        description: '<yellow>%quest%'
+        title: '<green>Quest Accepted: <yellow>%quest-name% <gray>[Level %level%]'
+        description: '<gray>%quest%'
         frame: TASK
         icon: quest
+        custom-model-data: 0
+        item-model: ''
       chat:
         enabled: false
       sound:
         enabled: true
         name: UI_TOAST_CHALLENGE_COMPLETE
+        category: MASTER
         volume: 1.0
         pitch: 1.2
     objectives-completed:
       enabled: true
       toast:
         enabled: true
-        title: '<gold>Objectives Complete'
-        description: '<yellow>Return to claim: %quest%'
+        title: '<gold>Objectives Complete: <yellow>%quest-name% <gray>[Level %level%]'
+        description: '<gray>Return to claim: %quest%'
         frame: GOAL
         icon: quest
+        custom-model-data: 0
+        item-model: ''
       chat:
         enabled: false
       sound:
         enabled: true
         name: ENTITY_PLAYER_LEVELUP
+        category: MASTER
         volume: 1.0
         pitch: 1.2
     quest-claimed:
       enabled: true
       toast:
         enabled: true
-        title: '<gold>Quest Completed'
-        description: '<yellow>%quest%'
+        title: '<gold>Quest Completed: <yellow>%quest-name% <gray>[Level %level%]'
+        description: '<gray>%quest%'
         frame: CHALLENGE
         icon: quest
+        custom-model-data: 0
+        item-model: ''
       chat:
         enabled: false
       sound:
         enabled: true
         name: UI_TOAST_CHALLENGE_COMPLETE
+        category: MASTER
         volume: 1.0
         pitch: 1.0
 integrations:
@@ -582,7 +591,7 @@ quest-accepted: '%prefix%<green>You accepted <yellow>%quest%</yellow>.'
 inventory-full: '%prefix%<red>You need more inventory space before claiming.'
 ~~~
 
-QuestKeeper supports per-event advancement toasts, chat messages, and sounds. Set `toast`, `chat`, or `sound` under `notifications.defaults` and override them under `notifications.events`. Toast frames are `TASK`, `GOAL`, or `CHALLENGE`; `icon: quest` uses the quest's configured icon, while any valid material can be used. Edit `config.yml` and use `/questadmin reload` to apply changes.
+QuestKeeper supports per-event advancement toasts, chat messages, and sounds. Set `toast`, `chat`, or `sound` under `notifications.defaults` and override them under `notifications.events`. Toast frames are `TASK`, `GOAL`, or `CHALLENGE`; `icon: quest` uses the quest's configured icon, while any valid material can be used. `custom-model-data` and `item-model` work with a server resource pack. Sound names may be vanilla keys such as `minecraft:ui.toast.challenge_complete` or custom resource-pack keys such as `my_pack:quest.accepted`; set `category: MUSIC` for music-channel playback. Edit `config.yml` and use `/questadmin reload` to apply changes.
 
 guis.yml provides the supported title and item material configuration surface. The custom-holder logic remains authoritative for identifying inventories.
 

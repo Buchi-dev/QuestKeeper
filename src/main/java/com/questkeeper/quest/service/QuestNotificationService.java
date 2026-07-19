@@ -5,6 +5,7 @@ import com.questkeeper.quest.model.Quest;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
 import org.bukkit.Sound;
+import org.bukkit.SoundCategory;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -83,22 +84,23 @@ public final class QuestNotificationService {
         if (notification.chat()) messages.send(player, messageKey, Map.of("quest", quest.displayName()), fallback);
         if (notification.toast()) {
             toasts.show(player, quest, notification.title(), notification.description(),
-                    notification.frame(), notification.icon());
+                    notification.frame(), notification.icon(), notification.customModelData(), notification.itemModel());
         }
         if (notification.sound().enabled()) {
             SoundSettings sound = notification.sound();
-            player.playSound(player.getLocation(), sound.sound(), sound.volume(), sound.pitch());
+            player.playSound(player.getLocation(), sound.soundKey(), sound.category(), sound.volume(), sound.pitch());
         }
     }
 
     private Notification read(Event event, String path, String legacyPath, String defaultTitle,
                               String defaultDescription, String defaultFrame, boolean defaultToast) {
         if (!config.contains(path) && config.contains(legacyPath)) {
-            Sound sound = sound(config.getString(legacyPath + ".sound"), defaultSound(event), legacyPath + ".sound");
+            String soundKey = soundKey(config.getString(legacyPath + ".sound"), defaultSound(event), legacyPath + ".sound");
             float volume = clamp(config.getDouble(legacyPath + ".volume", 1.0), 0.0f, 10.0f);
             float pitch = clamp(config.getDouble(legacyPath + ".pitch", 1.0), 0.0f, 2.0f);
             return new Notification(config.getBoolean(legacyPath + ".enabled", true), false, true,
-                    new SoundSettings(true, sound, volume, pitch), defaultTitle, defaultDescription, defaultFrame, "quest");
+                    new SoundSettings(true, soundKey, SoundCategory.MASTER, volume, pitch), defaultTitle,
+                    defaultDescription, defaultFrame, "quest", 0, "");
         }
 
         String defaults = "notifications.defaults";
@@ -106,15 +108,19 @@ public final class QuestNotificationService {
         boolean toast = channel(path + ".toast", config.getBoolean(defaults + ".toast", defaultToast));
         boolean chat = channel(path + ".chat", config.getBoolean(defaults + ".chat", false));
         boolean soundEnabled = channel(path + ".sound", config.getBoolean(defaults + ".sound", true));
-        Sound sound = sound(config.getString(path + ".sound.name"), defaultSound(event), path + ".sound.name");
+        String soundKey = soundKey(config.getString(path + ".sound.name"), defaultSound(event), path + ".sound.name");
+        SoundCategory category = category(config.getString(path + ".sound.category"), SoundCategory.MASTER,
+                path + ".sound.category");
         float volume = clamp(config.getDouble(path + ".sound.volume", 1.0), 0.0f, 10.0f);
         float pitch = clamp(config.getDouble(path + ".sound.pitch", 1.0), 0.0f, 2.0f);
         String title = config.getString(path + ".toast.title", defaultTitle);
         String description = config.getString(path + ".toast.description", defaultDescription);
         String frame = config.getString(path + ".toast.frame", defaultFrame);
         String icon = config.getString(path + ".toast.icon", "quest");
-        return new Notification(enabled, toast, chat, new SoundSettings(soundEnabled, sound, volume, pitch),
-                title, description, frame, icon);
+        int customModelData = Math.max(0, config.getInt(path + ".toast.custom-model-data", 0));
+        String itemModel = config.getString(path + ".toast.item-model", "");
+        return new Notification(enabled, toast, chat, new SoundSettings(soundEnabled, soundKey, category, volume, pitch),
+                title, description, frame, icon, customModelData, itemModel);
     }
 
     private boolean channel(String path, boolean fallback) {
@@ -126,15 +132,35 @@ public final class QuestNotificationService {
         return event == Event.OBJECTIVES_COMPLETED ? DEFAULT_OBJECTIVES_SOUND : DEFAULT_COMPLETION_SOUND;
     }
 
-    private Sound sound(String configured, Sound fallback, String path) {
-        if (configured == null || configured.isBlank()) return fallback;
-        String soundKey = configured.trim().toLowerCase(Locale.ROOT).replace('_', '.');
-        Sound sound = Registry.SOUNDS.get(NamespacedKey.minecraft(soundKey));
-        if (sound == null) {
-            plugin.getLogger().warning("Invalid sound '" + configured + "' at " + path
-                    + "; using " + fallback + ".");
+    private String soundKey(String configured, Sound fallback, String path) {
+        if (configured == null || configured.isBlank()) return fallback.getKey().toString();
+        String value = configured.trim().toLowerCase(Locale.ROOT);
+        if (!value.contains(":")) value = "minecraft:" + value.replace('_', '.');
+        if (NamespacedKey.fromString(value) == null) {
+            plugin.getLogger().warning("Invalid sound key '" + configured + "' at " + path
+                    + "; using " + fallback.getKey() + ".");
+            return fallback.getKey().toString();
         }
-        return sound == null ? fallback : sound;
+        if (value.startsWith("minecraft:")) {
+            String vanillaKey = value.substring("minecraft:".length());
+            if (Registry.SOUNDS.get(NamespacedKey.minecraft(vanillaKey)) == null) {
+                plugin.getLogger().warning("Unknown vanilla sound '" + configured + "' at " + path
+                        + "; using " + fallback.getKey() + ".");
+                return fallback.getKey().toString();
+            }
+        }
+        return value;
+    }
+
+    private SoundCategory category(String configured, SoundCategory fallback, String path) {
+        if (configured == null || configured.isBlank()) return fallback;
+        try {
+            return SoundCategory.valueOf(configured.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            plugin.getLogger().warning("Invalid sound category '" + configured + "' at " + path
+                    + "; using " + fallback.name() + ".");
+            return fallback;
+        }
     }
 
     private float clamp(double value, float minimum, float maximum) {
@@ -146,9 +172,11 @@ public final class QuestNotificationService {
     }
 
     private record Notification(boolean enabled, boolean toast, boolean chat, SoundSettings sound,
-                                String title, String description, String frame, String icon) {
+                                String title, String description, String frame, String icon,
+                                int customModelData, String itemModel) {
     }
 
-    private record SoundSettings(boolean enabled, Sound sound, float volume, float pitch) {
+    private record SoundSettings(boolean enabled, String soundKey, SoundCategory category,
+                                 float volume, float pitch) {
     }
 }

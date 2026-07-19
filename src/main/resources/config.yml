@@ -20,11 +20,14 @@ notifications:
         description: '<gray>%quest%'
         frame: TASK
         icon: quest
+        custom-model-data: 0
+        item-model: ''
       chat:
         enabled: false
       sound:
         enabled: true
         name: UI_TOAST_CHALLENGE_COMPLETE
+        category: MASTER
         volume: 1.0
         pitch: 1.2
     objectives-completed:
@@ -35,11 +38,14 @@ notifications:
         description: '<gray>Return to claim: %quest%'
         frame: GOAL
         icon: quest
+        custom-model-data: 0
+        item-model: ''
       chat:
         enabled: false
       sound:
         enabled: true
         name: ENTITY_PLAYER_LEVELUP
+        category: MASTER
         volume: 1.0
         pitch: 1.2
     quest-claimed:
@@ -50,11 +56,14 @@ notifications:
         description: '<gray>%quest%'
         frame: CHALLENGE
         icon: quest
+        custom-model-data: 0
+        item-model: ''
       chat:
         enabled: false
       sound:
         enabled: true
         name: UI_TOAST_CHALLENGE_COMPLETE
+        category: MASTER
         volume: 1.0
         pitch: 1.0
     quest-cancelled:
@@ -65,11 +74,14 @@ notifications:
         description: '<gray>%quest%'
         frame: TASK
         icon: quest
+        custom-model-data: 0
+        item-model: ''
       chat:
         enabled: false
       sound:
         enabled: false
         name: ENTITY_ITEM_BREAK
+        category: MASTER
         volume: 1.0
         pitch: 1.0
     quest-locked:
@@ -80,11 +92,14 @@ notifications:
         description: '<gray>%quest%'
         frame: TASK
         icon: quest
+        custom-model-data: 0
+        item-model: ''
       chat:
         enabled: true
       sound:
         enabled: false
         name: ENTITY_VILLAGER_NO
+        category: MASTER
         volume: 1.0
         pitch: 1.0
 integrations:

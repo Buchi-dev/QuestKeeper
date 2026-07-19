@@ -10,6 +10,8 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Locale;
@@ -28,14 +30,15 @@ public final class AdvancementToastService {
         this.plugin = plugin;
     }
 
-    public void show(Player player, Quest quest, String title, String description, String frame, String icon) {
-        Material material = resolveIcon(quest, icon);
+    public void show(Player player, Quest quest, String title, String description, String frame, String icon,
+                     int customModelData, String itemModel) {
+        ItemStack iconStack = resolveIcon(quest, icon, customModelData, itemModel);
         String advancementFrame = normalizeFrame(frame);
         Component titleComponent = mini.deserialize(resolveText(title, quest));
         Component descriptionComponent = mini.deserialize(resolveText(description, quest));
         NamespacedKey key = new NamespacedKey(plugin,
                 "toast/" + player.getUniqueId().toString().replace("-", "") + "/" + UUID.randomUUID());
-        String json = advancementJson(material, titleComponent, descriptionComponent, advancementFrame);
+        String json = advancementJson(iconStack, titleComponent, descriptionComponent, advancementFrame);
 
         Advancement advancement;
         try {
@@ -58,16 +61,28 @@ public final class AdvancementToastService {
         }, CLEANUP_TICKS);
     }
 
-    private Material resolveIcon(Quest quest, String configured) {
+    private ItemStack resolveIcon(Quest quest, String configured, int customModelData, String itemModel) {
         String value = configured == null ? "quest" : configured.trim();
         Material material = value.equalsIgnoreCase("quest")
                 ? Material.matchMaterial(quest.iconMaterial())
                 : Material.matchMaterial(value);
         if (material == null) {
             plugin.getLogger().warning("Invalid quest toast icon '" + value + "'; using BOOK.");
-            return Material.BOOK;
+            material = Material.BOOK;
         }
-        return material;
+        ItemStack stack = new ItemStack(material);
+        ItemMeta meta = stack.getItemMeta();
+        if (customModelData > 0) meta.setCustomModelData(customModelData);
+        if (itemModel != null && !itemModel.isBlank()) {
+            NamespacedKey key = NamespacedKey.fromString(itemModel.trim().toLowerCase(Locale.ROOT));
+            if (key == null) {
+                plugin.getLogger().warning("Invalid quest toast item model '" + itemModel + "'; ignoring it.");
+            } else {
+                meta.setItemModel(key);
+            }
+        }
+        stack.setItemMeta(meta);
+        return stack;
     }
 
     private String resolveText(String template, Quest quest) {
@@ -105,11 +120,12 @@ public final class AdvancementToastService {
         };
     }
 
-    private String advancementJson(Material icon, Component title, Component description, String frame) {
+    private String advancementJson(ItemStack icon, Component title, Component description, String frame) {
+        String iconJson = Bukkit.getUnsafe().serializeItemAsJson(icon).toString();
         return "{"
                 + "\"criteria\":{\"" + CRITERION + "\":{\"trigger\":\"minecraft:impossible\"}},"
                 + "\"display\":{"
-                + "\"icon\":{\"id\":\"minecraft:" + icon.name().toLowerCase(Locale.ROOT) + "\"},"
+                + "\"icon\":" + iconJson + ","
                 + "\"title\":" + gson.serialize(title) + ","
                 + "\"description\":" + gson.serialize(description) + ","
                 + "\"frame\":\"" + frame + "\","
