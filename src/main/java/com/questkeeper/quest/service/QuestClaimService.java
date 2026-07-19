@@ -33,17 +33,19 @@ public final class QuestClaimService {
     private final QuestStateService states;
     private final RequirementService requirements;
     private final MessageManager messages;
+    private final QuestNotificationService notifications;
     private final Set<UUID> locks = ConcurrentHashMap.newKeySet();
 
     public QuestClaimService(JavaPlugin plugin, QuestManager quests, PlayerQuestDataService data,
                              QuestStateService states, RequirementService requirements,
-                             MessageManager messages) {
+                             MessageManager messages, QuestNotificationService notifications) {
         this.plugin = plugin;
         this.quests = quests;
         this.data = data;
         this.states = states;
         this.requirements = requirements;
         this.messages = messages;
+        this.notifications = notifications;
     }
 
     public boolean accept(Player player, String id) {
@@ -71,7 +73,7 @@ public final class QuestClaimService {
         record.acceptedAt(System.currentTimeMillis());
         playerData.dirty();
         data.save(playerData);
-        messages.send(player, "quest-accepted", Map.of("quest", quest.displayName()));
+        notifications.questAccepted(player, quest);
         return true;
     }
 
@@ -94,7 +96,7 @@ public final class QuestClaimService {
         playerData.quests().remove(id);
         playerData.dirty();
         data.save(playerData);
-        messages.send(player, "quest-cancelled", Map.of("quest", quest.displayName()));
+        notifications.questCancelled(player, quest);
         return true;
     }
 
@@ -137,7 +139,7 @@ public final class QuestClaimService {
             playerData.dirty();
             data.save(playerData);
             Bukkit.getPluginManager().callEvent(new PlayerQuestCompleteEvent(player, quest));
-            messages.send(player, "quest-claimed", Map.of("quest", quest.displayName()));
+            notifications.questClaimed(player, quest);
             return true;
         } finally {
             long cooldownTicks = Math.max(1,

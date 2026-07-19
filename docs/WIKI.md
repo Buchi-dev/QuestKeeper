@@ -516,16 +516,56 @@ npc-validation-interval-seconds: 30
 reach-check-interval-ticks: 20
 reach-movement-threshold: 1.0
 notifications:
-  objectives-complete:
-    enabled: true
-    sound: ENTITY_PLAYER_LEVELUP
-    volume: 1.0
-    pitch: 1.2
-  quest-complete:
-    enabled: true
-    sound: UI_TOAST_CHALLENGE_COMPLETE
-    volume: 1.0
-    pitch: 1.0
+  defaults:
+    toast: true
+    chat: false
+    sound: true
+  events:
+    quest-accepted:
+      enabled: true
+      toast:
+        enabled: true
+        title: '<green>Quest Accepted'
+        description: '<yellow>%quest%'
+        frame: TASK
+        icon: quest
+      chat:
+        enabled: false
+      sound:
+        enabled: true
+        name: UI_TOAST_CHALLENGE_COMPLETE
+        volume: 1.0
+        pitch: 1.2
+    objectives-completed:
+      enabled: true
+      toast:
+        enabled: true
+        title: '<gold>Objectives Complete'
+        description: '<yellow>Return to claim: %quest%'
+        frame: GOAL
+        icon: quest
+      chat:
+        enabled: false
+      sound:
+        enabled: true
+        name: ENTITY_PLAYER_LEVELUP
+        volume: 1.0
+        pitch: 1.2
+    quest-claimed:
+      enabled: true
+      toast:
+        enabled: true
+        title: '<gold>Quest Completed'
+        description: '<yellow>%quest%'
+        frame: CHALLENGE
+        icon: quest
+      chat:
+        enabled: false
+      sound:
+        enabled: true
+        name: UI_TOAST_CHALLENGE_COMPLETE
+        volume: 1.0
+        pitch: 1.0
 integrations:
   vault: true
   placeholderapi: true
@@ -542,7 +582,7 @@ quest-accepted: '%prefix%<green>You accepted <yellow>%quest%</yellow>.'
 inventory-full: '%prefix%<red>You need more inventory space before claiming.'
 ~~~
 
-QuestKeeper plays configurable personal notifications when objectives are complete and when rewards are successfully claimed. Edit the `notifications` section in `config.yml` and use `/questadmin reload` to apply changes.
+QuestKeeper supports per-event advancement toasts, chat messages, and sounds. Set `toast`, `chat`, or `sound` under `notifications.defaults` and override them under `notifications.events`. Toast frames are `TASK`, `GOAL`, or `CHALLENGE`; `icon: quest` uses the quest's configured icon, while any valid material can be used. Edit `config.yml` and use `/questadmin reload` to apply changes.
 
 guis.yml provides the supported title and item material configuration surface. The custom-holder logic remains authoritative for identifying inventories.
 

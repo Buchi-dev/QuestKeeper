@@ -210,11 +210,6 @@ public final class QuestListener implements Listener {
     }
 
     @EventHandler
-    public void questComplete(com.questkeeper.api.event.PlayerQuestCompleteEvent event) {
-        notifications.questComplete(event.getPlayer(), event.getQuest());
-    }
-
-    @EventHandler
     public void kill(EntityDeathEvent event) {
         Player player = event.getEntity().getKiller();
         if (player == null) return;

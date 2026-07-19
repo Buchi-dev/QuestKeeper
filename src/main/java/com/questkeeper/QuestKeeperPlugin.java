@@ -61,7 +61,7 @@ public final class QuestKeeperPlugin extends JavaPlugin {
         }
         states = new QuestStateService(data, requirements, zone);
         progress = new QuestProgressService(data, quests, states);
-        claims = new QuestClaimService(this, quests, data, states, requirements, messages);
+        claims = new QuestClaimService(this, quests, data, states, requirements, messages, notifications);
         npcs = new NpcManager(this);
         guis = new GuiManager(this, quests, npcs, states, progress, requirements, messages);
         api = new QuestKeeperAPI(quests, data, states, progress, claims);

@@ -31,6 +31,7 @@ D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\quest\model\Reward
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\quest\model\RewardType.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\quest\QuestLoader.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\quest\QuestManager.java
+D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\quest\service\AdvancementToastService.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\quest\service\PlayerQuestDataService.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\quest\service\QuestClaimService.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\quest\service\QuestNotificationService.java

@@ -7,16 +7,86 @@ npc-validation-interval-seconds: 30
 reach-check-interval-ticks: 20
 reach-movement-threshold: 1.0
 notifications:
-  objectives-complete:
-    enabled: true
-    sound: ENTITY_PLAYER_LEVELUP
-    volume: 1.0
-    pitch: 1.2
-  quest-complete:
-    enabled: true
-    sound: UI_TOAST_CHALLENGE_COMPLETE
-    volume: 1.0
-    pitch: 1.0
+  defaults:
+    toast: true
+    chat: false
+    sound: true
+  events:
+    quest-accepted:
+      enabled: true
+      toast:
+        enabled: true
+        title: '<green>Quest Accepted'
+        description: '<yellow>%quest%'
+        frame: TASK
+        icon: quest
+      chat:
+        enabled: false
+      sound:
+        enabled: true
+        name: UI_TOAST_CHALLENGE_COMPLETE
+        volume: 1.0
+        pitch: 1.2
+    objectives-completed:
+      enabled: true
+      toast:
+        enabled: true
+        title: '<gold>Objectives Complete'
+        description: '<yellow>Return to claim: %quest%'
+        frame: GOAL
+        icon: quest
+      chat:
+        enabled: false
+      sound:
+        enabled: true
+        name: ENTITY_PLAYER_LEVELUP
+        volume: 1.0
+        pitch: 1.2
+    quest-claimed:
+      enabled: true
+      toast:
+        enabled: true
+        title: '<gold>Quest Completed'
+        description: '<yellow>%quest%'
+        frame: CHALLENGE
+        icon: quest
+      chat:
+        enabled: false
+      sound:
+        enabled: true
+        name: UI_TOAST_CHALLENGE_COMPLETE
+        volume: 1.0
+        pitch: 1.0
+    quest-cancelled:
+      enabled: true
+      toast:
+        enabled: true
+        title: '<yellow>Quest Cancelled'
+        description: '<yellow>%quest%'
+        frame: TASK
+        icon: quest
+      chat:
+        enabled: false
+      sound:
+        enabled: false
+        name: ENTITY_ITEM_BREAK
+        volume: 1.0
+        pitch: 1.0
+    quest-locked:
+      enabled: true
+      toast:
+        enabled: false
+        title: '<red>Quest Locked'
+        description: '<yellow>%quest%'
+        frame: TASK
+        icon: quest
+      chat:
+        enabled: true
+      sound:
+        enabled: false
+        name: ENTITY_VILLAGER_NO
+        volume: 1.0
+        pitch: 1.0
 integrations:
   vault: true
   placeholderapi: true
