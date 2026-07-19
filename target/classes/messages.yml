@@ -1,6 +1,7 @@
 prefix: '<dark_gray>[<gold>QuestKeeper</gold>]</dark_gray> '
 quest-accepted: '%prefix%<green>You accepted <yellow>%quest%</yellow>.'
-quest-completed: '%prefix%<green>Quest objectives completed. Return to the Quest Keeper.'
+quest-objectives-complete: '%prefix%<green>Objectives complete! Return to the Quest Keeper to claim your reward for <yellow>%quest%</yellow>.'
+quest-complete-announcer: '%prefix%<gold>Quest completed: <yellow>%quest%</yellow>!'
 quest-claimed: '%prefix%<green>You claimed the rewards for <yellow>%quest%</yellow>.'
 quest-locked: '%prefix%<red>You have not met this quest''s requirements.'
 quest-cancelled: '%prefix%<yellow>You cancelled <gold>%quest%</gold>.'

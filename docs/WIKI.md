@@ -515,6 +515,17 @@ gui-click-cooldown-millis: 250
 npc-validation-interval-seconds: 30
 reach-check-interval-ticks: 20
 reach-movement-threshold: 1.0
+notifications:
+  objectives-complete:
+    enabled: true
+    sound: ENTITY_PLAYER_LEVELUP
+    volume: 1.0
+    pitch: 1.2
+  quest-complete:
+    enabled: true
+    sound: UI_TOAST_CHALLENGE_COMPLETE
+    volume: 1.0
+    pitch: 1.0
 integrations:
   vault: true
   placeholderapi: true
@@ -530,6 +541,8 @@ prefix: '<dark_gray>[<gold>QuestKeeper</gold>]</dark_gray> '
 quest-accepted: '%prefix%<green>You accepted <yellow>%quest%</yellow>.'
 inventory-full: '%prefix%<red>You need more inventory space before claiming.'
 ~~~
+
+QuestKeeper plays configurable personal notifications when objectives are complete and when rewards are successfully claimed. Edit the `notifications` section in `config.yml` and use `/questadmin reload` to apply changes.
 
 guis.yml provides the supported title and item material configuration surface. The custom-holder logic remains authoritative for identifying inventories.
 

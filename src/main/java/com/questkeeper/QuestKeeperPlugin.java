@@ -14,6 +14,7 @@ import com.questkeeper.quest.service.QuestProgressService;
 import com.questkeeper.quest.service.QuestStateService;
 import com.questkeeper.quest.service.PlayerQuestDataService;
 import com.questkeeper.quest.service.RequirementService;
+import com.questkeeper.quest.service.QuestNotificationService;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -33,6 +34,7 @@ public final class QuestKeeperPlugin extends JavaPlugin {
     private NpcManager npcs;
     private GuiManager guis;
     private MessageManager messages;
+    private QuestNotificationService notifications;
     private QuestKeeperAPI api;
 
     @Override
@@ -46,6 +48,7 @@ public final class QuestKeeperPlugin extends JavaPlugin {
 
         messages = new MessageManager(getDataFolder());
         messages.load();
+        notifications = new QuestNotificationService(this, messages);
         database = new DatabaseManager(this, new File(getDataFolder(), getConfig().getString("database.file", "quests.db")));
         data = new PlayerQuestDataService(database);
         quests = new QuestManager();
@@ -64,7 +67,7 @@ public final class QuestKeeperPlugin extends JavaPlugin {
         api = new QuestKeeperAPI(quests, data, states, progress, claims);
         reloadQuestKeeper();
 
-        Bukkit.getPluginManager().registerEvents(new QuestListener(this, npcs, quests, guis, progress, claims, data, states, messages), this);
+        Bukkit.getPluginManager().registerEvents(new QuestListener(this, npcs, quests, guis, progress, claims, data, states, notifications), this);
         var playerCommand = new com.questkeeper.command.QuestCommand(guis, claims, quests, messages);
         Objects.requireNonNull(getCommand("quests"), "quests command is missing from plugin.yml").setExecutor(playerCommand);
         Objects.requireNonNull(getCommand("quests"), "quests command is missing from plugin.yml").setTabCompleter(playerCommand);
@@ -89,6 +92,7 @@ public final class QuestKeeperPlugin extends JavaPlugin {
 
     public boolean reloadQuestKeeper() {
         savePending();
+        reloadConfig();
         QuestLoader.LoadResult loaded = new QuestLoader(this)
                 .loadResult(new File(getDataFolder(), "quests"));
         if (!loaded.success()) {
@@ -98,6 +102,7 @@ public final class QuestKeeperPlugin extends JavaPlugin {
         }
         messages.load();
         guis.reload();
+        notifications.reload();
         npcs.removeAll();
         quests.replace(loaded.quests());
         npcs.load();

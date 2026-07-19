@@ -1,13 +1,22 @@
 titles:
-  npc: '<gold>Quests: %npc%'
-  journal: '<gold>Your Quest Journal'
-  details: '<gold>%quest%'
+  npc: '<dark_gray>Quest Board <gray>- <yellow>%npc%'
+  journal: '<dark_gray>Quest Journal'
+  details: '<dark_gray><gold>%quest%</gold> <gray>- <aqua>Quest Details'
 items:
-  previous: ARROW
-  next: ARROW
+  previous: SPECTRAL_ARROW
+  next: SPECTRAL_ARROW
   close: BARRIER
-  refresh: NETHER_STAR
-  accept: LIME_DYE
+  refresh: CLOCK
+  accept: LIME_CONCRETE
   claim: CHEST
-  cancel: RED_DYE
+  cancel: RED_CONCRETE
   back: OAK_DOOR
+details:
+  background: BLACK_STAINED_GLASS_PANE
+  border: GRAY_STAINED_GLASS_PANE
+  objective: WRITABLE_BOOK
+  requirements: PAPER
+  rewards: CHEST
+  description: BOOK
+  progress-filled: LIME_STAINED_GLASS_PANE
+  progress-empty: GRAY_STAINED_GLASS_PANE

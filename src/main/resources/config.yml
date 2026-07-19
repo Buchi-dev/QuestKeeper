@@ -6,6 +6,17 @@ gui-click-cooldown-millis: 250
 npc-validation-interval-seconds: 30
 reach-check-interval-ticks: 20
 reach-movement-threshold: 1.0
+notifications:
+  objectives-complete:
+    enabled: true
+    sound: ENTITY_PLAYER_LEVELUP
+    volume: 1.0
+    pitch: 1.2
+  quest-complete:
+    enabled: true
+    sound: UI_TOAST_CHALLENGE_COMPLETE
+    volume: 1.0
+    pitch: 1.0
 integrations:
   vault: true
   placeholderapi: true

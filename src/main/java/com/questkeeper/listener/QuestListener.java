@@ -6,7 +6,6 @@ import com.questkeeper.gui.QuestChainHolder;
 import com.questkeeper.gui.QuestCatalogFilter;
 import com.questkeeper.gui.GuiManager;
 import com.questkeeper.api.event.PlayerQuestObjectivesCompleteEvent;
-import com.questkeeper.message.MessageManager;
 import com.questkeeper.npc.NpcManager;
 import com.questkeeper.quest.QuestManager;
 import com.questkeeper.quest.model.ObjectiveType;
@@ -16,6 +15,7 @@ import com.questkeeper.quest.service.PlayerQuestDataService;
 import com.questkeeper.quest.service.QuestClaimService;
 import com.questkeeper.quest.service.QuestProgressService;
 import com.questkeeper.quest.service.QuestStateService;
+import com.questkeeper.quest.service.QuestNotificationService;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -54,13 +54,13 @@ public final class QuestListener implements Listener {
     private final QuestStateService states;
     private final long reachCheckIntervalMillis;
     private final double reachMovementThreshold;
-    private final MessageManager messages;
+    private final QuestNotificationService notifications;
     private final Map<String, Long> placedBlocks = new HashMap<>();
     private final Map<UUID, Long> lastReachCheck = new HashMap<>();
 
     public QuestListener(JavaPlugin plugin, NpcManager npcs, QuestManager quests, GuiManager guis,
                          QuestProgressService progress, QuestClaimService claims, PlayerQuestDataService data,
-                         QuestStateService states, MessageManager messages) {
+                         QuestStateService states, QuestNotificationService notifications) {
         this.npcs = npcs;
         this.quests = quests;
         this.guis = guis;
@@ -68,7 +68,7 @@ public final class QuestListener implements Listener {
         this.claims = claims;
         this.data = data;
         this.states = states;
-        this.messages = messages;
+        this.notifications = notifications;
         this.reachCheckIntervalMillis = Math.max(0L,
                 plugin.getConfig().getLong("reach-check-interval-ticks", 20L) * 50L);
         this.reachMovementThreshold = Math.max(0.0,
@@ -165,16 +165,24 @@ public final class QuestListener implements Listener {
         } else if (holder instanceof DetailQuestHolder detail) {
             Quest quest = quests.get(detail.questId);
             if (quest == null) return;
-            if (event.getRawSlot() == 18) {
+            if (event.getRawSlot() == 53) {
+                player.closeInventory();
+                return;
+            }
+            if (event.getRawSlot() == 45) {
                 if (detail.chainId == null || detail.chainId.isBlank()) guis.openCatalog(player, detail.npcId, 0, QuestCatalogFilter.ALL);
                 else guis.openChain(player, detail.npcId, detail.chainId);
                 return;
             }
+            if (event.getRawSlot() == 47) {
+                guis.openDetails(player, detail.questId, detail.npcId, detail.chainId);
+                return;
+            }
             QuestStatus status = states.state(player, quest);
-            if (event.getRawSlot() == 22) {
+            if (event.getRawSlot() == 49) {
                 if (status == QuestStatus.AVAILABLE) claims.accept(player, quest.id());
                 else if (status == QuestStatus.READY_TO_CLAIM) claims.claim(player, quest.id(), detail.npcId.isBlank() ? quest.claimNpc() : detail.npcId);
-                else if (status == QuestStatus.ACTIVE) claims.cancel(player, quest.id());
+                else if (status == QuestStatus.ACTIVE && quest.allowCancel()) claims.cancel(player, quest.id());
                 guis.openDetails(player, quest.id(), detail.npcId, detail.chainId);
             }
         }
@@ -193,10 +201,17 @@ public final class QuestListener implements Listener {
     public void autoClaim(PlayerQuestObjectivesCompleteEvent event) {
         Quest quest = event.getQuest();
         if (quest.autoClaim()) {
-            claims.claim(event.getPlayer(), quest.id(), quest.claimNpc());
+            if (!claims.claim(event.getPlayer(), quest.id(), quest.claimNpc())) {
+                notifications.objectivesComplete(event.getPlayer(), quest);
+            }
         } else {
-            messages.send(event.getPlayer(), "quest-completed", Map.of("quest", quest.displayName()));
+            notifications.objectivesComplete(event.getPlayer(), quest);
         }
+    }
+
+    @EventHandler
+    public void questComplete(com.questkeeper.api.event.PlayerQuestCompleteEvent event) {
+        notifications.questComplete(event.getPlayer(), event.getQuest());
     }
 
     @EventHandler

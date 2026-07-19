@@ -3,7 +3,9 @@ com\questkeeper\quest\QuestLoader.class
 com\questkeeper\quest\model\PlayerQuestData$Snapshot.class
 com\questkeeper\quest\model\RewardType.class
 com\questkeeper\quest\service\QuestClaimService$1.class
+com\questkeeper\quest\service\QuestNotificationService$Notification.class
 com\questkeeper\gui\QuestCatalogFilter.class
+com\questkeeper\quest\service\QuestNotificationService.class
 com\questkeeper\QuestKeeperPlugin.class
 com\questkeeper\quest\model\RepeatType.class
 com\questkeeper\quest\service\QuestProgressService$QuestManagerView.class

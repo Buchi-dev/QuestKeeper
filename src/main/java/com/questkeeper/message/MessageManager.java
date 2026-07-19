@@ -13,7 +13,11 @@ public final class MessageManager {
     public MessageManager(File dataFolder) { file = new File(dataFolder, "messages.yml"); }
     public void load() { config = YamlConfiguration.loadConfiguration(file); }
     public void send(Player player, String key, Map<String, String> replacements) {
-        String raw = config.getString(key, "<red>Missing message: " + key + "</red>");
+        send(player, key, replacements, "<red>Missing message: " + key + "</red>");
+    }
+
+    public void send(Player player, String key, Map<String, String> replacements, String fallback) {
+        String raw = config.getString(key, fallback);
         raw = raw.replace("%prefix%", config.getString("prefix", ""));
         for (var entry : replacements.entrySet()) raw = raw.replace("%" + entry.getKey() + "%", entry.getValue());
         player.sendMessage(mini.deserialize(raw));

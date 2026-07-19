@@ -6,6 +6,7 @@ import com.questkeeper.quest.QuestManager;
 import com.questkeeper.quest.model.ObjectiveDefinition;
 import com.questkeeper.quest.model.Quest;
 import com.questkeeper.quest.model.QuestStatus;
+import com.questkeeper.quest.model.RewardDefinition;
 import com.questkeeper.quest.service.QuestProgressService;
 import com.questkeeper.quest.service.QuestStateService;
 import com.questkeeper.quest.service.RequirementService;
@@ -33,6 +34,13 @@ import java.util.Objects;
 public final class GuiManager {
     private static final int PAGE_SIZE = 36;
     private static final int[] CHAIN_SLOTS = {10, 11, 12, 13, 14};
+    private static final int DETAIL_SIZE = 54;
+    private static final int DETAIL_BACK_SLOT = 45;
+    private static final int DETAIL_REFRESH_SLOT = 47;
+    private static final int DETAIL_ACTION_SLOT = 49;
+    private static final int DETAIL_CLOSE_SLOT = 53;
+    private static final int[] DETAIL_PROGRESS_SLOTS = {19, 20, 21, 22, 23, 24, 25};
+    private static final int[] DETAIL_REWARD_SLOTS = {29, 30, 31, 32, 33, 34};
 
     private final JavaPlugin plugin;
     private final QuestManager quests;
@@ -143,34 +151,147 @@ public final class GuiManager {
         Quest quest = quests.get(questId);
         if (quest == null) return;
         DetailQuestHolder holder = new DetailQuestHolder(questId, npcId, chainId);
-        Inventory inventory = Bukkit.createInventory(holder, 27,
-                messages.component(guiString("titles.details", "<gold>%quest%"), Map.of("quest", quest.displayName())));
+        Inventory inventory = Bukkit.createInventory(holder, DETAIL_SIZE,
+                messages.component("<reset>" + guiString("titles.details", "<gold>%quest%"),
+                        Map.of("quest", quest.displayName())));
         holder.inventory(inventory);
-        inventory.setItem(4, item(Material.matchMaterial(quest.iconMaterial()), quest.displayName(), quest.description()));
+        fillDetailBackground(inventory);
+
+        QuestStatus status = states.state(player, quest);
+        List<String> headerLore = new ArrayList<>(quest.description());
+        headerLore.add("");
+        headerLore.add("<gray>Tier: <white>" + levelOf(quest.id()));
+        headerLore.add("<gray>Status: " + statusColor(status) + statusLabel(status));
+        inventory.setItem(4, item(Material.matchMaterial(quest.iconMaterial()), quest.displayName(), headerLore));
 
         List<String> objectiveLore = new ArrayList<>();
+        int totalProgress = 0;
+        int totalRequired = 0;
         for (ObjectiveDefinition objective : quest.objectives().values()) {
+            int current = progress.progress(player, quest, objective.id());
+            totalProgress += Math.min(current, objective.amount());
+            totalRequired += objective.amount();
             objectiveLore.add(mini.serialize(component(objective.display(), Map.of(
-                    "progress", String.valueOf(progress.progress(player, quest, objective.id())),
+                    "progress", String.valueOf(current),
                     "required", String.valueOf(objective.amount())
             ))));
         }
-        inventory.setItem(10, item(Material.WRITABLE_BOOK, "<yellow>Objectives", objectiveLore));
+        if (objectiveLore.isEmpty()) objectiveLore.add("<gray>No objectives configured.");
+        inventory.setItem(10, item(guiMaterial("details.objective", Material.WRITABLE_BOOK),
+                "<yellow>Objectives", objectiveLore));
+
         List<String> missing = new ArrayList<>(requirements.missing(player, quest));
         if (missing.isEmpty()) missing.add("<green>All requirements met");
-        inventory.setItem(12, item(Material.PAPER, "<yellow>Requirements", missing));
-        inventory.setItem(14, item(Material.CHEST, "<yellow>Rewards", quest.rewards().stream()
-                .map(reward -> "<white>" + reward.type() + " " + reward.amount()).toList()));
+        inventory.setItem(12, item(guiMaterial("details.requirements", Material.PAPER),
+                "<yellow>Requirements", missing));
 
-        QuestStatus status = states.state(player, quest);
-        inventory.setItem(16, item(materialFor(status), "<yellow>Status: <white>" + status, List.of(
-                "<gray>Level " + levelOf(quest.id()) + " of this mob chain"
+        List<String> rewardLore = quest.rewards().stream().map(this::rewardDescription).toList();
+        if (rewardLore.isEmpty()) rewardLore = List.of("<gray>No rewards configured.");
+        inventory.setItem(14, item(guiMaterial("details.rewards", Material.CHEST),
+                "<yellow>Rewards", rewardLore));
+
+        inventory.setItem(16, item(materialFor(status), statusColor(status) + statusLabel(status), List.of(
+                "<gray>Level " + levelOf(quest.id()) + " of this mob chain",
+                "<gray>Progress: <white>" + totalProgress + "/" + totalRequired
         )));
-        if (status == QuestStatus.AVAILABLE) inventory.setItem(22, item(guiMaterial("items.accept", Material.LIME_DYE), "<green>Accept Quest", List.of()));
-        if (status == QuestStatus.READY_TO_CLAIM) inventory.setItem(22, item(guiMaterial("items.claim", Material.CHEST), "<green>Claim Reward", List.of()));
-        if (status == QuestStatus.ACTIVE && quest.allowCancel()) inventory.setItem(22, item(guiMaterial("items.cancel", Material.RED_DYE), "<red>Cancel Quest", List.of()));
-        inventory.setItem(18, item(guiMaterial("items.back", Material.OAK_DOOR), "<yellow>Back to Levels", List.of()));
+
+        int percent = totalRequired <= 0 ? 0 : (int) Math.round(totalProgress * 100.0 / totalRequired);
+        int filledSegments = (int) Math.ceil(percent / 100.0 * DETAIL_PROGRESS_SLOTS.length);
+        for (int i = 0; i < DETAIL_PROGRESS_SLOTS.length; i++) {
+            boolean filled = i < filledSegments;
+            inventory.setItem(DETAIL_PROGRESS_SLOTS[i], item(
+                    guiMaterial(filled ? "details.progress-filled" : "details.progress-empty",
+                            filled ? Material.LIME_STAINED_GLASS_PANE : Material.GRAY_STAINED_GLASS_PANE),
+                    filled ? "<green>Progress" : "<gray>Progress",
+                    List.of("<white>" + totalProgress + "/" + totalRequired + " <gray>(" + percent + "%)")));
+        }
+
+        List<String> description = new ArrayList<>(quest.description());
+        if (description.isEmpty()) description.add("<gray>No description provided.");
+        description.add("");
+        description.add("<gray>Quest ID: <dark_gray>" + quest.id());
+        inventory.setItem(28, item(guiMaterial("details.description", Material.BOOK),
+                "<aqua>Quest Description", description));
+        for (int i = 0; i < quest.rewards().size() && i < DETAIL_REWARD_SLOTS.length; i++) {
+            inventory.setItem(DETAIL_REWARD_SLOTS[i], rewardItem(quest.rewards().get(i)));
+        }
+
+        inventory.setItem(DETAIL_BACK_SLOT, item(guiMaterial("items.back", Material.OAK_DOOR),
+                "<yellow>Back to Levels", List.of("<gray>Return to the quest chain.")));
+        inventory.setItem(DETAIL_REFRESH_SLOT, item(guiMaterial("items.refresh", Material.NETHER_STAR),
+                "<aqua>Refresh", List.of("<gray>Refresh quest progress.")));
+        if (status == QuestStatus.AVAILABLE) {
+            inventory.setItem(DETAIL_ACTION_SLOT, item(guiMaterial("items.accept", Material.LIME_DYE),
+                    "<green>Accept Quest", List.of("<gray>Start this quest.")));
+        } else if (status == QuestStatus.READY_TO_CLAIM) {
+            inventory.setItem(DETAIL_ACTION_SLOT, item(guiMaterial("items.claim", Material.CHEST),
+                    "<gold>Claim Rewards", List.of("<gray>Collect your quest rewards.")));
+        } else if (status == QuestStatus.ACTIVE && quest.allowCancel()) {
+            inventory.setItem(DETAIL_ACTION_SLOT, item(guiMaterial("items.cancel", Material.RED_DYE),
+                    "<red>Cancel Quest", List.of("<gray>Abandon this quest.")));
+        } else {
+            inventory.setItem(DETAIL_ACTION_SLOT, item(Material.GRAY_STAINED_GLASS_PANE,
+                    "<dark_gray>No Action Available", List.of("<gray>This quest has no available action.")));
+        }
+        inventory.setItem(DETAIL_CLOSE_SLOT, item(guiMaterial("items.close", Material.BARRIER),
+                "<red>Close", List.of("<gray>Close the quest details.")));
         player.openInventory(inventory);
+    }
+
+    private void fillDetailBackground(Inventory inventory) {
+        Material background = guiMaterial("details.background", Material.BLACK_STAINED_GLASS_PANE);
+        Material border = guiMaterial("details.border", Material.GRAY_STAINED_GLASS_PANE);
+        for (int slot = 0; slot < DETAIL_SIZE; slot++) inventory.setItem(slot, item(background, "<dark_gray> ", List.of()));
+        for (int column = 0; column < 9; column++) {
+            inventory.setItem(column, item(border, "<dark_gray> ", List.of()));
+            inventory.setItem(45 + column, item(border, "<dark_gray> ", List.of()));
+        }
+        for (int row = 1; row < 5; row++) {
+            inventory.setItem(row * 9, item(border, "<dark_gray> ", List.of()));
+            inventory.setItem(row * 9 + 8, item(border, "<dark_gray> ", List.of()));
+        }
+    }
+
+    private ItemStack rewardItem(RewardDefinition reward) {
+        Material material = switch (reward.type()) {
+            case EXPERIENCE -> Material.EXPERIENCE_BOTTLE;
+            case MONEY -> Material.GOLD_INGOT;
+            case ITEM -> Material.matchMaterial(reward.value());
+            case COMMAND -> Material.COMMAND_BLOCK;
+            case PERMISSION -> Material.NAME_TAG;
+        };
+        return item(material, "<gold>" + rewardLabel(reward), List.of(rewardDescription(reward)));
+    }
+
+    private String rewardDescription(RewardDefinition reward) {
+        return "<white>" + rewardLabel(reward);
+    }
+
+    private String rewardLabel(RewardDefinition reward) {
+        return switch (reward.type()) {
+            case EXPERIENCE -> reward.amount() + " experience";
+            case MONEY -> "$" + reward.amount();
+            case ITEM -> reward.amount() + "x " + reward.value();
+            case COMMAND -> "Command reward";
+            case PERMISSION -> "Permission reward";
+        };
+    }
+
+    private String statusLabel(QuestStatus status) {
+        return switch (status) {
+            case READY_TO_CLAIM -> "Ready to Claim";
+            default -> status.name().replace('_', ' ');
+        };
+    }
+
+    private String statusColor(QuestStatus status) {
+        return switch (status) {
+            case AVAILABLE -> "<gold>";
+            case ACTIVE -> "<aqua>";
+            case READY_TO_CLAIM -> "<green>";
+            case COMPLETED -> "<dark_green>";
+            case LOCKED, COOLDOWN -> "<red>";
+        };
     }
 
     private List<Chain> chainsFor(Player player, String npcId, QuestCatalogFilter filter) {
