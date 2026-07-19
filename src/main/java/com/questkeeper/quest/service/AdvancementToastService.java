@@ -31,8 +31,8 @@ public final class AdvancementToastService {
     public void show(Player player, Quest quest, String title, String description, String frame, String icon) {
         Material material = resolveIcon(quest, icon);
         String advancementFrame = normalizeFrame(frame);
-        Component titleComponent = mini.deserialize(title.replace("%quest%", quest.displayName()));
-        Component descriptionComponent = mini.deserialize(description.replace("%quest%", quest.displayName()));
+        Component titleComponent = mini.deserialize(resolveText(title, quest));
+        Component descriptionComponent = mini.deserialize(resolveText(description, quest));
         NamespacedKey key = new NamespacedKey(plugin,
                 "toast/" + player.getUniqueId().toString().replace("-", "") + "/" + UUID.randomUUID());
         String json = advancementJson(material, titleComponent, descriptionComponent, advancementFrame);
@@ -70,6 +70,33 @@ public final class AdvancementToastService {
         return material;
     }
 
+    private String resolveText(String template, Quest quest) {
+        String level = questLevel(quest.id());
+        String name = quest.displayName();
+        if (!level.isBlank()) {
+            name = name.replaceFirst("\\s+(?:I|II|III|IV|V|1|2|3|4|5)$", "");
+        }
+        return template
+                .replace("%quest%", quest.displayName())
+                .replace("%quest-name%", name)
+                .replace("%level%", level);
+    }
+
+    private String questLevel(String questId) {
+        if (questId == null || questId.isEmpty()) return "";
+        char last = questId.charAt(questId.length() - 1);
+        if (questId.length() < 2 || questId.charAt(questId.length() - 2) != '_'
+                || last < '1' || last > '5') return "";
+        return switch (last) {
+            case '1' -> "I";
+            case '2' -> "II";
+            case '3' -> "III";
+            case '4' -> "IV";
+            case '5' -> "V";
+            default -> "";
+        };
+    }
+
     private String normalizeFrame(String configured) {
         String frame = configured == null ? "TASK" : configured.trim().toLowerCase(Locale.ROOT);
         return switch (frame) {
@@ -82,7 +109,7 @@ public final class AdvancementToastService {
         return "{"
                 + "\"criteria\":{\"" + CRITERION + "\":{\"trigger\":\"minecraft:impossible\"}},"
                 + "\"display\":{"
-                + "\"icon\":{\"item\":\"minecraft:" + icon.name().toLowerCase(Locale.ROOT) + "\"},"
+                + "\"icon\":{\"id\":\"minecraft:" + icon.name().toLowerCase(Locale.ROOT) + "\"},"
                 + "\"title\":" + gson.serialize(title) + ","
                 + "\"description\":" + gson.serialize(description) + ","
                 + "\"frame\":\"" + frame + "\","

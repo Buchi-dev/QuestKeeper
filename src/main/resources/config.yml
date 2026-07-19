@@ -16,8 +16,8 @@ notifications:
       enabled: true
       toast:
         enabled: true
-        title: '<green>Quest Accepted'
-        description: '<yellow>%quest%'
+        title: '<green>Quest Accepted: <yellow>%quest-name% <gray>[Level %level%]'
+        description: '<gray>%quest%'
         frame: TASK
         icon: quest
       chat:
@@ -31,8 +31,8 @@ notifications:
       enabled: true
       toast:
         enabled: true
-        title: '<gold>Objectives Complete'
-        description: '<yellow>Return to claim: %quest%'
+        title: '<gold>Objectives Complete: <yellow>%quest-name% <gray>[Level %level%]'
+        description: '<gray>Return to claim: %quest%'
         frame: GOAL
         icon: quest
       chat:
@@ -46,8 +46,8 @@ notifications:
       enabled: true
       toast:
         enabled: true
-        title: '<gold>Quest Completed'
-        description: '<yellow>%quest%'
+        title: '<gold>Quest Completed: <yellow>%quest-name% <gray>[Level %level%]'
+        description: '<gray>%quest%'
         frame: CHALLENGE
         icon: quest
       chat:
@@ -61,8 +61,8 @@ notifications:
       enabled: true
       toast:
         enabled: true
-        title: '<yellow>Quest Cancelled'
-        description: '<yellow>%quest%'
+        title: '<yellow>Quest Cancelled: <white>%quest-name% <gray>[Level %level%]'
+        description: '<gray>%quest%'
         frame: TASK
         icon: quest
       chat:
@@ -76,8 +76,8 @@ notifications:
       enabled: true
       toast:
         enabled: false
-        title: '<red>Quest Locked'
-        description: '<yellow>%quest%'
+        title: '<red>Quest Locked: <white>%quest-name% <gray>[Level %level%]'
+        description: '<gray>%quest%'
         frame: TASK
         icon: quest
       chat:

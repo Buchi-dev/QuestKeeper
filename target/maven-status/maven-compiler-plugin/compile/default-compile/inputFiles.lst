@@ -20,6 +20,7 @@ D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\listener\QuestList
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\message\MessageManager.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\npc\NpcDefinition.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\npc\NpcManager.java
+D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\QuestKeeperPlugin.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\quest\model\ObjectiveDefinition.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\quest\model\ObjectiveType.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\quest\model\PlayerQuestData.java
@@ -39,5 +40,4 @@ D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\quest\service\Ques
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\quest\service\QuestStateRules.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\quest\service\QuestStateService.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\quest\service\RequirementService.java
-D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\QuestKeeperPlugin.java
 D:\Projects\Plugins\QuestKeeper\src\main\java\com\questkeeper\utility\IdValidator.java

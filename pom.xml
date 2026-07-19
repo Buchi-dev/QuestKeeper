@@ -7,9 +7,9 @@
     <name>QuestKeeper</name>
     <description>A lightweight Paper quest plugin.</description>
     <properties>
-        <maven.compiler.release>21</maven.compiler.release>
+        <maven.compiler.release>25</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <paper.version>1.21.8-R0.1-SNAPSHOT</paper.version>
+        <paper.version>26.1.2.build.72-stable</paper.version>
         <junit.version>5.11.0</junit.version>
     </properties>
     <repositories>
